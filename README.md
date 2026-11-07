@@ -4,11 +4,15 @@
 
 **팀에서 정한 기준의 원문이 바뀌면, 그 기준을 다시 검토하게 하는 로컬 위키입니다.** 두 문서에 서로 다른 신청 기한이 적혀 있다고 해보세요. 담당자는 어느 쪽을 따를지 정하고 이유를 남깁니다. 나중에 공지가 고쳐지면 이전 결정이 재검토로 돌아옵니다. 그때 읽었던 원문도 다시 열 수 있습니다.
 
+| 바로 실행 | 직접 개발한 기능 |
+|---|---|
+| Python 3.10 이상에서 `python run.py --demo` · [설치 순서](#직접-써보기) | 원문 버전 보관, 두 지침 비교, 채택 기록, 변경 후 재검토와 과거 원문 복원 · [구현 범위](#직접-만든-부분과-연결한-도구) |
+
 **23초 데모**　모집 공지의 **14일** 기준 채택 → 공지를 **10일**로 수정 → **재검토 필요** → 당시의 **14일 원문** 확인.
 
 [![14일 기준을 채택한 뒤 공지가 10일로 바뀌어 재검토되는 실제 앱 화면](docs/media/deadline-review.gif)](docs/media/deadline-review.mp4)
 
-[MP4 영상](docs/media/deadline-review.mp4) · [구성도](docs/ARCHITECTURE.md) · [실행 검증](docs/VALIDATION.md)
+[MP4 다운로드](https://github.com/SakJaeLim/folio-wiki/raw/refs/heads/main/docs/media/deadline-review.mp4) · [구성도](docs/ARCHITECTURE.md) · [실행 검증](docs/VALIDATION.md)
 
 ## 직접 써보기
 

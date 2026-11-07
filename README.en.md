@@ -4,11 +4,15 @@
 
 **Folio Wiki reopens a team decision when its source changes.** A workshop handbook says seven days and the recruitment notice says fourteen. A reviewer adopts the notice and records why. When the notice changes to ten days, the decision returns to the review queue. The original fourteen-day passage is still available in the history.
 
+| Run the demo | Original Folio features |
+|---|---|
+| Python 3.10+ and `python run.py --demo` · [Setup](#try-it) | Versioned source passages, side-by-side comparison, recorded decisions, review after edits and historical evidence recovery · [Implementation](#what-this-repository-implements) |
+
 **23-second demo**　Adopt **14 days** → edit the notice to **10 days** → see **review required** → reopen the original **14-day notice**. Captions are in English and Korean.
 
 [![Actual review workflow from the 14-day decision to a changed 10-day notice](docs/media/deadline-review.gif)](docs/media/deadline-review.mp4)
 
-[MP4 video](docs/media/deadline-review.mp4) · [Architecture](docs/ARCHITECTURE.md) · [Validation](docs/VALIDATION.md)
+[Download MP4](https://github.com/SakJaeLim/folio-wiki/raw/refs/heads/main/docs/media/deadline-review.mp4) · [Architecture](docs/ARCHITECTURE.md) · [Validation](docs/VALIDATION.md)
 
 ## Try it
 
