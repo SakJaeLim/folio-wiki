@@ -1,8 +1,8 @@
 """Exercise the commands a new user copies from the README."""
 
 import json
+import re
 import shutil
-import socket
 import subprocess
 import sys
 import tempfile
@@ -26,15 +26,16 @@ class DemoCommands(unittest.TestCase):
                     checkout / name,
                     ignore=shutil.ignore_patterns("__pycache__"),
                 )
-            with socket.socket() as sock:
-                sock.bind(("127.0.0.1", 0))
-                port = sock.getsockname()[1]
             cmd = [sys.executable, "-S", "run.py"]
-            server = subprocess.Popen(
-                [*cmd, "--demo", "--port", str(port)],
-                cwd=checkout,
-                stdout=subprocess.DEVNULL,
-            )
+            log = Path(tmp) / "server.log"
+            with log.open("wb") as stream:
+                server = subprocess.Popen(
+                    [*cmd, "--demo", "--port", "0"],
+                    cwd=checkout,
+                    stdout=stream,
+                    stderr=stream,
+                )
+            local = request.build_opener(request.ProxyHandler({}))
 
             def api(path, payload=None):
                 body = json.dumps(payload).encode() if payload is not None else None
@@ -43,19 +44,24 @@ class DemoCommands(unittest.TestCase):
                     data=body,
                     headers={"Content-Type": "application/json"},
                 )
-                with request.urlopen(req, timeout=3) as response:
+                with local.open(req, timeout=8) as response:
                     return json.load(response)
 
             try:
-                deadline = time.monotonic() + 15
-                while True:
-                    try:
-                        initial = api("/api/view")
-                        break
-                    except OSError:
-                        if server.poll() is not None or time.monotonic() >= deadline:
-                            raise
-                        time.sleep(0.1)
+                deadline = time.monotonic() + 45
+                while not (
+                    ready := re.search(
+                        rb"Folio Wiki http://127\.0\.0\.1:(\d+)/", log.read_bytes()
+                    )
+                ):
+                    if server.poll() is not None or time.monotonic() >= deadline:
+                        self.fail(
+                            "Server did not announce its port: "
+                            + log.read_bytes().decode(errors="replace")
+                        )
+                    time.sleep(0.1)
+                port = int(ready[1])
+                initial = api("/api/view")
                 self.assertTrue(initial["demo"])
                 topic = initial["topics"][0]
                 chosen = next(c for c in topic["candidates"] if "14일" in c["quote"])

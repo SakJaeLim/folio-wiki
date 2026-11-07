@@ -106,8 +106,8 @@ def main():
 
         def dispatch(self, post=False):
             if self.headers.get("Host") not in {
-                f"127.0.0.1:{args.port}",
-                f"localhost:{args.port}",
+                f"127.0.0.1:{self.server.server_port}",
+                f"localhost:{self.server.server_port}",
             }:
                 return self.send(403, {"error": "로컬 주소로 접속해 주세요."})
             url = urlsplit(self.path)
@@ -214,7 +214,7 @@ def main():
             pass
 
     http = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
-    print(f"Folio Wiki http://127.0.0.1:{args.port}/   {folder}", flush=True)
+    print(f"Folio Wiki http://127.0.0.1:{http.server_port}/   {folder}", flush=True)
     try:
         http.serve_forever()
     finally:
