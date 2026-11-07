@@ -1,0 +1,11 @@
+{
+  "commit": "79a5a2d5fb9e07c7e5d21fe704b4eca0c27452ef",
+  "entry_point": "llm_wiki_bench.bench_ingest._save_article_original",
+  "source_input_hash_old": "775a331dc11cdbe0586e9dcf6a94555e04759efd9412402403870457fbbf0708",
+  "source_input_hash_new": "12fe15f9ab975b8a6c67c1a3dbe4150ed6e2b09e4c27b8f81df96d2babf36eb7",
+  "same_title_same_stem": true,
+  "same_title_archive_contains_old": true,
+  "same_title_archive_contains_new": false,
+  "distinct_title_control_contains_new": true,
+  "scope": "Imported helper, no model, no application-level update or retrieval claim."
+}

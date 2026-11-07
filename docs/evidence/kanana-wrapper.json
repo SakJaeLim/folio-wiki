@@ -1,0 +1,1 @@
+{"mode": "wrapper-only synthetic logits, no model inference", "question_ids": ["relation"], "answer": {"type": "choice", "choice": "conflict", "confidence": 0.49786143366223273, "probabilities": {"conflict": 0.6652409557748218, "compatible": 0.24472847105479764, "insufficient": 0.09003057317038046}}}

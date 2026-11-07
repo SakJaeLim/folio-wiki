@@ -1,0 +1,71 @@
+{
+  "attempted": 16,
+  "scheduled": 16,
+  "valid": 16,
+  "gold_agreement": 14,
+  "confusion_counts": {
+    "compatible->compatible": 6,
+    "insufficient->review": 2,
+    "review->review": 8
+  },
+  "complete_pairs": 8,
+  "order_flips": 0,
+  "pairs": [
+    {
+      "case": "same-vs-divergent",
+      "gold": "review",
+      "AB": "review",
+      "BA": "review",
+      "flip": false
+    },
+    {
+      "case": "paraphrase",
+      "gold": "compatible",
+      "AB": "compatible",
+      "BA": "compatible",
+      "flip": false
+    },
+    {
+      "case": "distinct-scope",
+      "gold": "compatible",
+      "AB": "compatible",
+      "BA": "compatible",
+      "flip": false
+    },
+    {
+      "case": "missing-context",
+      "gold": "insufficient",
+      "AB": "review",
+      "BA": "review",
+      "flip": false
+    },
+    {
+      "case": "effective-time",
+      "gold": "compatible",
+      "AB": "compatible",
+      "BA": "compatible",
+      "flip": false
+    },
+    {
+      "case": "polarity",
+      "gold": "review",
+      "AB": "review",
+      "BA": "review",
+      "flip": false
+    },
+    {
+      "case": "instruction-in-data",
+      "gold": "review",
+      "AB": "review",
+      "BA": "review",
+      "flip": false
+    },
+    {
+      "case": "threshold-day",
+      "gold": "review",
+      "AB": "review",
+      "BA": "review",
+      "flip": false
+    }
+  ]
+}

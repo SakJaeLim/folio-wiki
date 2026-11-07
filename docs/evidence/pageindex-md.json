@@ -1,0 +1,89 @@
+{
+  "entry": "function",
+  "records": [
+    {
+      "case": "base",
+      "sha256": "7216f60e7bdfc1cf1cd66c4e1791f35453e5e5ebfa2ff8048407ecfb6e8a4873",
+      "nodes": [
+        {
+          "title": "안내",
+          "node_id": "0000",
+          "line_num": 2,
+          "text": "# 안내\n팀 공통 안내입니다."
+        },
+        {
+          "title": "신청 기한",
+          "node_id": "0001",
+          "line_num": 4,
+          "text": "## 신청 기한\n신청 기한은 7일입니다."
+        },
+        {
+          "title": "예외",
+          "node_id": "0002",
+          "line_num": 6,
+          "text": "## 예외\n관리자에게 문의하세요."
+        }
+      ]
+    },
+    {
+      "case": "insert",
+      "sha256": "7969f409d47044540c11311fcc0459134e5582786f87ff258d765789fa3b4c6d",
+      "nodes": [
+        {
+          "title": "안내",
+          "node_id": "0000",
+          "line_num": 2,
+          "text": "# 안내\n팀 공통 안내입니다."
+        },
+        {
+          "title": "정의",
+          "node_id": "0001",
+          "line_num": 4,
+          "text": "## 정의\n날짜는 달력일입니다."
+        },
+        {
+          "title": "신청 기한",
+          "node_id": "0002",
+          "line_num": 6,
+          "text": "## 신청 기한\n신청 기한은 7일입니다."
+        },
+        {
+          "title": "예외",
+          "node_id": "0003",
+          "line_num": 8,
+          "text": "## 예외\n관리자에게 문의하세요."
+        }
+      ]
+    },
+    {
+      "case": "edit",
+      "sha256": "f0d2836d52fcf0893238b5281256d5ff5ff8d2455f0c150fcfa59b162648b2d1",
+      "nodes": [
+        {
+          "title": "안내",
+          "node_id": "0000",
+          "line_num": 2,
+          "text": "# 안내\n팀 공통 안내입니다."
+        },
+        {
+          "title": "신청 기한",
+          "node_id": "0001",
+          "line_num": 4,
+          "text": "## 신청 기한\n신청 기한은 14일입니다."
+        },
+        {
+          "title": "예외",
+          "node_id": "0002",
+          "line_num": 6,
+          "text": "## 예외\n관리자에게 문의하세요."
+        }
+      ]
+    },
+    {
+      "case": "plain",
+      "sha256": "630921ff62cef2a3a79516a6c2a70bb636224e8cafcfdc69b786cc6b19c72207",
+      "nodes": []
+    }
+  ],
+  "network_attempts": []
+}

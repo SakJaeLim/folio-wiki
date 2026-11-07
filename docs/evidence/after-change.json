@@ -1,0 +1,110 @@
+{
+  "snapshot": "014d29a1753bb33e14104da442f1f03168fd56db94a517c796499a365d67a9a4",
+  "files": {
+    "01-운영안내.md": "5b57454de2a6d57c45df8e128413db68ff94541ab071d7edf24288df3f5e92a3",
+    "02-모집공지.md": "a9a503cfccf7600cf16ffa60adba33026fa1f017276714f78308ec34c7a74505"
+  },
+  "engine": "ready",
+  "detail": "",
+  "pages": [
+    {
+      "content": "# 공개 워크숍\n\n## 공개 워크숍 운영 안내\n\n### 공개 워크숍 [[concept/신청 기한|신청 기한]]\n참가자는 행사 시작 7일 전까지 신청서를 제출합니다.\n\n### 공개 워크숍 운영팀 문의처\n공개 워크숍 운영팀이 참가 문의를 받습니다.\n\n## 공개 워크숍 모집 공지\n\n### 공개 워크숍 신청 기한\n참가자는 행사 시작 10일 전까지 신청서를 제출합니다.\n\n### 제출 방법\n신청서와 발표 제목을 함께 제출합니다.\n\n## Key Takeaways\n\n- 공개 워크숍의 신청 기한은 각각 7일 전과 10일 전입니다.\n- 문의처는 공개 워크숍 운영팀입니다.\n- 신청서와 발표 제목을 함께 제출해야 합니다.\n- 각 워크숍 모집 공지는 신청 기한이 다릅니다.",
+      "page_type": "entity",
+      "slug": "entity/공개-워크숍",
+      "source_refs": [
+        "a26a3b15-26a7-4d36-ae23-318c8f5c3c42"
+      ],
+      "title": "공개 워크숍",
+      "version": 1
+    },
+    {
+      "content": "# 신청 기한\n\n## 신청 기한\n참가자는 행사 시작 7일 전까지 신청서를 제출합니다.\n\n## 문의처\n[[entity/공개-워크숍|공개 워크숍]] 운영팀이 참가 문의를 받습니다.\n\n---\n\n파일: 02-모집공지.md\n\n## 신청 기한\n참가자는 행사 시작 10일 전까지 신청서를 제출합니다.\n\n## 제출 방법\n신청서와 발표 제목을 함께 제출합니다.",
+      "page_type": "concept",
+      "slug": "concept/신청 기한",
+      "source_refs": [
+        "a26a3b15-26a7-4d36-ae23-318c8f5c3c42"
+      ],
+      "title": "신청 기한",
+      "version": 1
+    },
+    {
+      "content": "## [[entity/공개-워크숍|공개 워크숍]] [[concept/신청 기한|신청 기한]] 및 문의처 운영 안내\n\n### 공개 워크숍 운영 안내\n\n#### 신청 기한\n참가자는 행사 시작 7일 전까지 신청서를 제출합니다.\n\n#### 문의처\n공개 워크숍 운영팀이 참가 문의를 받습니다.\n\n### 공개 워크숍 모집 공지\n\n#### 신청 기한\n참가자는 행사 시작 10일 전까지 신청서를 제출합니다.\n\n#### 제출 방법\n신청서와 발표 제목을 함께 제출합니다.\n\n## Key Takeaways\n\n- 공개 워크숍의 신청 기한은 각각 7일 전과 10일 전입니다.\n- 문의처는 공개 워크숍 운영팀입니다.\n- 신청서와 발표 제목을 함께 제출해야 합니다.\n- 각 워크숍 모집 공지는 신청 기한이 다릅니다.",
+      "page_type": "summary",
+      "slug": "summary/a26a3b15-26a7-4d36-ae23-318c8f5c3c42",
+      "source_refs": [
+        "a26a3b15-26a7-4d36-ae23-318c8f5c3c42"
+      ],
+      "title": "공개 폴더 014d29a1753b - Summary",
+      "version": 1
+    },
+    {
+      "content": "# Wiki Index\n\n이 페이지는 자동으로 업데이트됩니다. 새로운 페이지가 추가될 때.\n\n공개 워크숍의 신청 기한과 문의처에 대한 안내 내용을 제공하는 문서들이 추가되었습니다.",
+      "page_type": "index",
+      "slug": "index",
+      "source_refs": null,
+      "title": "Index",
+      "version": 2
+    }
+  ],
+  "topics": [
+    {
+      "name": "신청 기한",
+      "generation": 2,
+      "candidates": [
+        {
+          "end": 4,
+          "id": "1c7af6548371d30e58bf505ecbd480c4ccb5d4589873e55680baac6e9dbf13af",
+          "path": "01-운영안내.md",
+          "quote": "참가자는 행사 시작 7일 전까지 신청서를 제출합니다.",
+          "start": 4,
+          "topic": "신청 기한",
+          "version": "5b57454de2a6d57c45df8e128413db68ff94541ab071d7edf24288df3f5e92a3"
+        },
+        {
+          "end": 4,
+          "id": "6d3eff88bbf11a4bf7e6620239e79726dab2ffa0dcdbbc579140d441b1377bbb",
+          "path": "02-모집공지.md",
+          "quote": "참가자는 행사 시작 10일 전까지 신청서를 제출합니다.",
+          "start": 4,
+          "topic": "신청 기한",
+          "version": "a9a503cfccf7600cf16ffa60adba33026fa1f017276714f78308ec34c7a74505"
+        }
+      ],
+      "status": "review_again"
+    }
+  ],
+  "decisions": [
+    {
+      "id": 1,
+      "topic": "신청 기한",
+      "generation": 1,
+      "selection": "0df4888b2f46653ce82a14151723a9ffbadf7c4e09a6360e5ed13020558b77d1",
+      "actor": "데모 운영팀",
+      "note": "공개 워크숍 이번 회차에는 모집 공지의 14일 기준을 적용합니다.",
+      "evidence": [
+        {
+          "end": 4,
+          "id": "1c7af6548371d30e58bf505ecbd480c4ccb5d4589873e55680baac6e9dbf13af",
+          "path": "01-운영안내.md",
+          "quote": "참가자는 행사 시작 7일 전까지 신청서를 제출합니다.",
+          "start": 4,
+          "topic": "신청 기한",
+          "version": "5b57454de2a6d57c45df8e128413db68ff94541ab071d7edf24288df3f5e92a3"
+        },
+        {
+          "end": 4,
+          "id": "0df4888b2f46653ce82a14151723a9ffbadf7c4e09a6360e5ed13020558b77d1",
+          "path": "02-모집공지.md",
+          "quote": "참가자는 행사 시작 14일 전까지 신청서를 제출합니다.",
+          "start": 4,
+          "topic": "신청 기한",
+          "version": "320c9fe657321179adeeabfb493b8c38f7418e55f4342f82f2b445e0519dedfa"
+        }
+      ],
+      "created": "2026-11-07T13:50:09+09:00"
+    }
+  ],
+  "sync_error": "",
+  "folder": "demo-input",
+  "jev": true
+}

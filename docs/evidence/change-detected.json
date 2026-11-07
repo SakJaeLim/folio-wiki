@@ -1,0 +1,71 @@
+{
+  "snapshot": "014d29a1753bb33e14104da442f1f03168fd56db94a517c796499a365d67a9a4",
+  "files": {
+    "01-운영안내.md": "5b57454de2a6d57c45df8e128413db68ff94541ab071d7edf24288df3f5e92a3",
+    "02-모집공지.md": "a9a503cfccf7600cf16ffa60adba33026fa1f017276714f78308ec34c7a74505"
+  },
+  "engine": "building",
+  "detail": "WeKnora가 공개 자료로 위키 초안을 작성하고 있습니다.",
+  "pages": [],
+  "topics": [
+    {
+      "name": "신청 기한",
+      "generation": 2,
+      "candidates": [
+        {
+          "end": 4,
+          "id": "1c7af6548371d30e58bf505ecbd480c4ccb5d4589873e55680baac6e9dbf13af",
+          "path": "01-운영안내.md",
+          "quote": "참가자는 행사 시작 7일 전까지 신청서를 제출합니다.",
+          "start": 4,
+          "topic": "신청 기한",
+          "version": "5b57454de2a6d57c45df8e128413db68ff94541ab071d7edf24288df3f5e92a3"
+        },
+        {
+          "end": 4,
+          "id": "6d3eff88bbf11a4bf7e6620239e79726dab2ffa0dcdbbc579140d441b1377bbb",
+          "path": "02-모집공지.md",
+          "quote": "참가자는 행사 시작 10일 전까지 신청서를 제출합니다.",
+          "start": 4,
+          "topic": "신청 기한",
+          "version": "a9a503cfccf7600cf16ffa60adba33026fa1f017276714f78308ec34c7a74505"
+        }
+      ],
+      "status": "review_again"
+    }
+  ],
+  "decisions": [
+    {
+      "id": 1,
+      "topic": "신청 기한",
+      "generation": 1,
+      "selection": "0df4888b2f46653ce82a14151723a9ffbadf7c4e09a6360e5ed13020558b77d1",
+      "actor": "데모 운영팀",
+      "note": "공개 워크숍 이번 회차에는 모집 공지의 14일 기준을 적용합니다.",
+      "evidence": [
+        {
+          "end": 4,
+          "id": "1c7af6548371d30e58bf505ecbd480c4ccb5d4589873e55680baac6e9dbf13af",
+          "path": "01-운영안내.md",
+          "quote": "참가자는 행사 시작 7일 전까지 신청서를 제출합니다.",
+          "start": 4,
+          "topic": "신청 기한",
+          "version": "5b57454de2a6d57c45df8e128413db68ff94541ab071d7edf24288df3f5e92a3"
+        },
+        {
+          "end": 4,
+          "id": "0df4888b2f46653ce82a14151723a9ffbadf7c4e09a6360e5ed13020558b77d1",
+          "path": "02-모집공지.md",
+          "quote": "참가자는 행사 시작 14일 전까지 신청서를 제출합니다.",
+          "start": 4,
+          "topic": "신청 기한",
+          "version": "320c9fe657321179adeeabfb493b8c38f7418e55f4342f82f2b445e0519dedfa"
+        }
+      ],
+      "created": "2026-11-07T13:50:09+09:00"
+    }
+  ],
+  "sync_error": "",
+  "folder": "demo-input",
+  "jev": true
+}

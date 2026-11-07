@@ -1,0 +1,22 @@
+{
+  "path": "02-모집공지.md",
+  "version": "320c9fe657321179adeeabfb493b8c38f7418e55f4342f82f2b445e0519dedfa",
+  "body": "# 공개 워크숍 모집 공지\n\n## 신청 기한\n참가자는 행사 시작 14일 전까지 신청서를 제출합니다.\n\n## 제출 방법\n신청서와 발표 제목을 함께 제출합니다.\n",
+  "outline": {
+    "provider": "PageIndex",
+    "nodes": [
+      {
+        "title": "공개 워크숍 모집 공지",
+        "line": 1
+      },
+      {
+        "title": "신청 기한",
+        "line": 3
+      },
+      {
+        "title": "제출 방법",
+        "line": 6
+      }
+    ]
+  }
+}
