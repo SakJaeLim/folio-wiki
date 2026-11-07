@@ -8,6 +8,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
+from folio import demo
 from folio.documents import digest
 from folio.integrations import advice, outline
 from folio.store import Conflict, Store
@@ -18,8 +19,17 @@ ROOT = Path(__file__).resolve().parent
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--folder", type=Path, default=ROOT / "examples/public-handbook"
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--folder", type=Path)
+    mode.add_argument(
+        "--demo",
+        action="store_true",
+        help="Try the review desk with a local workshop example",
+    )
+    mode.add_argument(
+        "--revise-demo",
+        action="store_true",
+        help="Change the demo notice from 14 to 10 days",
     )
     parser.add_argument("--state", type=Path)
     parser.add_argument("--port", type=int, default=8848)
@@ -30,7 +40,18 @@ def main():
         help="Allow explicit public-excerpt calls to TypeSafe",
     )
     args = parser.parse_args()
-    folder = args.folder.resolve(strict=True)
+    if args.revise_demo:
+        try:
+            demo.revise(ROOT)
+        except (ValueError, OSError) as exc:
+            parser.error(str(exc))
+        print("Demo notice now uses the 10-day deadline.")
+        return
+    folder = (
+        demo.prepare(ROOT)
+        if args.demo
+        else (args.folder or ROOT / "examples/public-handbook").resolve(strict=True)
+    )
     if args.state is None:
         args.state = (
             ROOT / ".state" / "folders" / digest(os.path.normcase(str(folder)))[:24]
@@ -43,18 +64,25 @@ def main():
             return store.sync(folder)
 
     sync()
-    engine = Engine(store, args.weknora_url, args.state)
-    threading.Thread(target=engine.run, daemon=True).start()
+    engine = None if args.demo else Engine(store, args.weknora_url, args.state)
+    stopped = engine.closed if engine else threading.Event()
+    if engine:
+        threading.Thread(target=engine.run, daemon=True).start()
+
+    def notify_engine():
+        if engine:
+            engine.wake.set()
+
     scan_status = {"sync_error": ""}
 
     def watch():
-        while not engine.closed.wait(4):
+        while not stopped.wait(4):
             before = store.snapshot()
             try:
                 after = sync()
                 scan_status["sync_error"] = ""
                 if not before or before["id"] != after:
-                    engine.wake.set()
+                    notify_engine()
             except (ValueError, OSError) as exc:
                 scan_status["sync_error"] = "폴더를 읽지 못했습니다. " + str(exc)
 
@@ -97,7 +125,7 @@ def main():
                     raise ValueError("JSON 객체가 필요합니다.")
                 if url.path == "/api/sync":
                     sync()
-                    engine.wake.set()
+                    notify_engine()
                 elif url.path == "/api/decide":
                     # Read disk again before committing an old screen's choice.
                     with lock:
@@ -109,7 +137,7 @@ def main():
                             body["actor"],
                             body["note"],
                         )
-                    engine.wake.set()
+                    notify_engine()
                 elif url.path == "/api/advice":
                     if not args.enable_jev:
                         return self.send(
@@ -140,6 +168,7 @@ def main():
                     {
                         **store.view(),
                         **scan_status,
+                        "demo": args.demo,
                         "folder": folder.name,
                         "jev": args.enable_jev,
                     },
@@ -189,8 +218,8 @@ def main():
     try:
         http.serve_forever()
     finally:
-        engine.closed.set()
-        engine.wake.set()
+        stopped.set()
+        notify_engine()
         http.server_close()
 
 

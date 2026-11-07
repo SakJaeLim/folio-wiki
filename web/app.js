@@ -96,11 +96,11 @@ function render() {
     empty: "자료 대기",
   };
   document.querySelector("#engine").textContent =
-    statuses[data.engine] || data.engine;
+    data.demo ? "로컬 검토 데모" : statuses[data.engine] || data.engine;
   const waiting = data.topics.filter((t) => t.status !== "adopted").length;
   const subtitle = {
     review: `원문 ${Object.keys(data.files).length}개에서 확인한 항목 중 ${waiting}건이 결정을 기다립니다.`,
-    wiki: "담당자가 채택한 안내와 WeKnora가 작성한 초안을 읽습니다.",
+    wiki: data.demo ? "담당자가 현재 자료에 채택한 안내를 읽습니다." : "담당자가 채택한 안내와 WeKnora가 작성한 초안을 읽습니다.",
     sources: "가져온 문서의 원문과 절별 위치를 확인합니다.",
     history: "누가 어떤 원문을 채택했는지 당시 버전과 함께 확인합니다.",
   }[view];
@@ -131,8 +131,8 @@ function render() {
     const pages = [...data.pages].sort((a,b) => order.indexOf(a.page_type)-order.indexOf(b.page_type));
     if(waiting) html += `<button class="quiet" data-review-jump>검토할 지침 ${waiting}건 보기</button>`;
     html += `<section class="panel"><h2>채택한 안내</h2>
-      ${adopted.map(historyRow).join("") || '<p class="muted">현재 버전에서 채택한 안내가 없습니다.</p>'}</section>
-      <section class="panel"><div class="cardhead"><h2>WeKnora 초안</h2><small>${esc(statuses[data.engine] || "")}</small></div>
+      ${adopted.map(historyRow).join("") || '<p class="muted">현재 버전에서 채택한 안내가 없습니다.</p>'}</section>`;
+    if (!data.demo) html += `<section class="panel"><div class="cardhead"><h2>WeKnora 초안</h2><small>${esc(statuses[data.engine] || "")}</small></div>
       <details><summary>초안에 사용한 원문 ${Object.keys(data.files).length}개</summary>
       ${Object.entries(data.files).map(([path,version]) => `<div>${sourceBtn({path,version},path)}</div>`).join("")}</details>
       ${data.detail ? `<p class="notice">${esc(data.detail)}</p>` : ""}
@@ -147,6 +147,7 @@ function render() {
 async function load(force = false) {
   const next = await api("/api/view"),
     changed = JSON.stringify(next) !== JSON.stringify(data);
+  if (!data && next.demo) view = "review";
   data = next;
   if (force || changed) render();
 }
