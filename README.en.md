@@ -69,6 +69,8 @@ python run.py --folder "/path/to/public-markdown" --weknora-url http://127.0.0.1
 
 ## Validation and research
 
+Replaying four public guide revisions reduced reopened decisions from 17 to 3. On two Korean agencies’ corrections, both ordinary document comparison and Folio found all three affected decisions. [Pilot results and official notices (Korean)](docs/research/revision-pilot.md)
+
 With synthetic public fixtures, the app reopened an adopted rule and recovered its original passage. On the tested CPU, the initial WeKnora draft and index took about nine minutes. Some Lite source lookups logged SQLite warnings. [Observed results](docs/VALIDATION.md)
 
 An open research question is how often team members act on an obsolete decision after its source changes. Compare document search, a conventional wiki and Folio on the same source history. Measure wrong-rule applications, unnecessary reviews and time to find the correct evidence. Organizational outcomes have yet to be measured. [Prior work and evaluation plan](docs/research/README.md)

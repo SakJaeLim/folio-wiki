@@ -4,8 +4,8 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .documents import digest, public_files, sections
 from .anchors import comparison, definitions, links, units
+from .documents import digest, public_files, sections
 
 
 def now():
@@ -43,7 +43,9 @@ class Store:
                     UNIQUE(topic,generation));
             """)
             db.execute("BEGIN IMMEDIATE")
-            if "comparison" not in {r["name"] for r in db.execute("PRAGMA table_info(topics)")}:
+            if "comparison" not in {
+                r["name"] for r in db.execute("PRAGMA table_info(topics)")
+            }:
                 db.execute("ALTER TABLE topics ADD COLUMN comparison TEXT")
 
     @contextmanager
@@ -101,7 +103,8 @@ class Store:
                 ):
                     continue
                 decision = db.execute(
-                    "SELECT selection,evidence FROM decisions WHERE topic=? ORDER BY id DESC LIMIT 1", (topic,)
+                    "SELECT selection,evidence FROM decisions WHERE topic=? ORDER BY id DESC LIMIT 1",
+                    (topic,),
                 ).fetchone()
                 status, change = "open", None
                 if decision:
@@ -109,17 +112,31 @@ class Store:
                     if selection in ("hold", "withdraw"):
                         status = "held" if selection == "hold" else "adopted"
                     else:
-                        chosen = next(c for c in json.loads(decision["evidence"]) if c["id"] == selection)
+                        chosen = next(
+                            c
+                            for c in json.loads(decision["evidence"])
+                            if c["id"] == selection
+                        )
                         if "references" not in chosen:
-                            archived = db.execute("SELECT body FROM sources WHERE path=? AND version=?",
-                                                  (chosen["path"], chosen["version"])).fetchone()
-                            chosen["references"] = links(chosen["quote"], definitions(archived["body"]))
+                            archived = db.execute(
+                                "SELECT body FROM sources WHERE path=? AND version=?",
+                                (chosen["path"], chosen["version"]),
+                            ).fetchone()
+                            chosen["references"] = links(
+                                chosen["quote"], definitions(archived["body"])
+                            )
                         change = comparison(chosen, items)
                         status = "review_again" if change else "adopted"
                 generation = prior["generation"] + 1 if prior else 1
                 db.execute(
                     "INSERT OR REPLACE INTO topics(name,generation,candidates,status,comparison) VALUES (?,?,?,?,?)",
-                    (topic, generation, candidates, status, pack(change) if change else None),
+                    (
+                        topic,
+                        generation,
+                        candidates,
+                        status,
+                        pack(change) if change else None,
+                    ),
                 )
             db.execute("INSERT OR REPLACE INTO current VALUES (1,?)", (manifest,))
             db.execute("PRAGMA user_version=1")
@@ -148,7 +165,11 @@ class Store:
                 raise Conflict("현재 원문 중에서 선택해 주세요.")
             if unit is not None:
                 chosen = next((c for c in items if c["id"] == selection), None)
-                if chosen is None or type(unit) is not int or not 0 <= unit < len(units(chosen)):
+                if (
+                    chosen is None
+                    or type(unit) is not int
+                    or not 0 <= unit < len(units(chosen))
+                ):
                     raise ValueError("현재 원문에 있는 문장을 선택해 주세요.")
                 chosen["unit"] = unit
             db.execute(
@@ -169,7 +190,10 @@ class Store:
                     (topic,),
                 )
             else:
-                db.execute("UPDATE topics SET status='adopted',comparison=NULL WHERE name=?", (topic,))
+                db.execute(
+                    "UPDATE topics SET status='adopted',comparison=NULL WHERE name=?",
+                    (topic,),
+                )
 
     def snapshot(self):
         with self.db() as db:
