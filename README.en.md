@@ -38,7 +38,7 @@ The UI and sample documents are in Korean. Local demo files and history persist 
 | An incoming project lead inherits an old procedure and a revised announcement | Both passages the previous lead saw and the version that changed |
 | A team republishes guidance after a source edit | Which decision needs another review and the evidence behind the previous one |
 
-The pilot finds passages under matching Markdown heading paths in different files. A reviewer decides which passage applies. An unrelated edit elsewhere in a cited file can also reopen a decision. Organizational accounts, document-level permissions and cloud-drive sync are outside the current implementation.
+When passages disagree under matching headings, choose the source and the sentence your team will use. You can also adopt the entire section. Existing decisions keep their original section scope. Changes to the selected wording or a referenced Markdown link destination reopen the decision and show the adopted and current evidence side by side. Edits elsewhere leave it active. Missing or ambiguous passages require review. Folio does not fetch linked web pages or infer that an exception added elsewhere overrides a saved sentence.
 
 ## What this repository implements
 
