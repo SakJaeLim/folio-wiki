@@ -51,20 +51,21 @@ const sourceBtn = (item, label = "원문 보기") =>
   `<button type="button" class="link" data-path="${esc(item.path)}" data-version="${esc(item.version)}" data-line="${item.start || 1}">${esc(label)}</button>`;
 function historyRow(d) {
   const selected = d.evidence.find((c) => c.id === d.selection);
-  return `<div class="decision"><strong>${esc(d.topic)} · ${selected ? "채택" : d.selection === "hold" ? "보류" : "철회"}</strong><p>${selected ? esc(d.excerpt?.quote ?? selected.quote) : d.selection === "hold" ? "판단을 보류했습니다." : "안내를 철회했습니다."}</p><p class="muted">${esc(d.actor)} · ${esc(d.note)}</p><small>${esc(new Date(d.created).toLocaleString("ko-KR"))}</small><details><summary>결정 당시 원문 ${d.evidence.length}개</summary>${d.evidence.map((x) => `<div>${sourceBtn(x, x.path)} <small>${x.start}–${x.end}행</small></div>`).join("")}</details></div>`;
+  return `<div class="decision"><strong>${esc(d.topic)} · ${selected ? "채택" : d.selection === "hold" ? "보류" : "철회"}</strong><p>${selected ? esc(d.excerpt?.quote ?? selected.quote) : d.selection === "hold" ? "판단을 보류했습니다." : "안내를 철회했습니다."}</p>${selected?.scope || selected?.audience ? `<small>적용 범위 · ${esc([selected.scope, selected.audience].filter(Boolean).join(" / "))}</small>` : ""}<p class="muted">${esc(d.actor)} · ${esc(d.note)}</p><small>${esc(new Date(d.created).toLocaleString("ko-KR"))}</small><details><summary>결정 당시 원문 ${d.evidence.length}개</summary>${d.evidence.map((x) => `<div>${sourceBtn(x, x.path)} <small>${x.start}–${x.end}행</small></div>`).join("")}</details></div>`;
 }
-function changes({before, after, reason, exceptions}) {
+function changes({before, after, reason, exceptions, scope, audience}) {
   function side(item, title, message) {
     if (!item) return `<section class="quote"><h3>${title}</h3><p>${message}</p></section>`;
     const refs = Object.entries(item.links).map(([name, url]) =>
       `<div><b>${esc(name)}</b><br><code>${esc(url)}</code></div>`).join("");
     const lines = item.start === item.end ? item.start : item.start + "~" + item.end;
-    return `<section class="quote"><h3>${title}</h3><small>${sourceBtn(item, item.path)} · ${lines}행</small><p>${marked(item.quote)}</p>${refs}</section>`;
+    return `<section class="quote"><h3>${title}</h3><small>${item.section ? esc(item.section) + " · " : ""}${sourceBtn(item, item.path)} · ${lines}행</small><p>${marked(item.quote)}</p>${refs}</section>`;
   }
   if (reason === "exception") {
     const previous = exceptions.removed.map(item => side(item, "채택 당시 예외 문구", "")).join("");
     const latest = exceptions.added.map(item => side(item, "현재 예외 문구", "")).join("");
-    return `<div class="revision"><p class="notice">채택한 문장은 그대로입니다. 예외 조항이 바뀌어 적용 범위를 다시 확인해야 합니다.</p>
+    const target = [scope, audience].filter(Boolean).join(" / ");
+    return `<div class="revision"><p class="notice">채택한 문장은 그대로입니다. 예외 조항이 바뀌어 적용 범위를 다시 확인해야 합니다.${target ? `<br>검토 대상: ${esc(target)}` : ""}</p>
       <div class="compare"><div>${side(before, "채택한 기준", "")}${previous}</div>
       <div>${latest || side(after, "현재 원문 · 이전 예외 삭제", "")}</div></div></div>`;
   }
@@ -75,10 +76,19 @@ function changes({before, after, reason, exceptions}) {
 }
 function candidate(x, t, draft, adopted) {
   const active = t.status === "adopted";
+  const prior = adopted?.path === x.path ? adopted : {};
+  const program = draft["scope-"+x.id] ?? prior?.scope ?? "";
+  const audience = draft["audience-"+x.id] ?? prior?.audience ?? "";
+  const names = data.headings?.[x.path] || [];
+  const filter = `<details><summary>다른 절의 예외를 확인할 범위</summary>
+    <label class="scope">적용 사업·절<select name="scope-${x.id}"><option value="">모든 절</option>
+    ${program && !names.includes(program) ? `<option selected value="${esc(program)}">이전 절: ${esc(program)} (다시 선택)</option>` : ""}
+    ${names.map(n => `<option value="${esc(n)}" ${program===n ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></label>
+    <label>적용 대상<input name="audience-${x.id}" value="${esc(audience)}" maxlength="160" placeholder="원문에 적힌 대상명 · 비우면 전체"></label></details>`;
   const scope = active ? "" : `<label class="scope">채택 범위<select name="unit-${x.id}" aria-label="${esc(x.path)} 채택 범위">
     <option value="choose">문장을 선택하세요</option>${x.units.map((u,i) => `<option value="${i}" ${(draft["unit-"+x.id] ?? (x.units.length === 1 ? "0" : "choose")) === String(i) ? "selected" : ""}>${u.start}행 · ${esc(u.quote)}</option>`).join("")}<option value="" ${draft["unit-"+x.id] === "" ? "selected" : ""}>이 절 전체</option></select></label>`;
   return `<section class="quote"><small>${active && adopted?.path === x.path ? "채택한 원문" : "원문"} ${x.start}~${x.end}행</small><h3>${sourceBtn(x, x.path)}</h3><p>${marked(x.quote)}</p>
-    ${active ? "" : `<label class="pick"><input type="radio" name="selection" value="${x.id}" ${draft.selection === x.id ? "checked" : ""}> 이 원문 채택</label>${scope}`}</section>`;
+    ${active ? "" : `<label class="pick"><input type="radio" name="selection" value="${x.id}" ${draft.selection === x.id ? "checked" : ""}> 이 원문 채택</label>${scope}${filter}`}</section>`;
 }
 function review(t, idx) {
   const draft = saved.get(key(t)) || {},
@@ -226,6 +236,8 @@ desk.onsubmit = async (e) => {
       note: form.note,
       selection: form.selection,
       unit: form["unit-" + form.selection] ? Number(form["unit-" + form.selection]) : null,
+      scope: form["scope-" + form.selection] || "",
+      audience: form["audience-" + form.selection] || "",
       topic: t.name,
       generation: t.generation,
     });
