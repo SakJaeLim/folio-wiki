@@ -53,12 +53,20 @@ function historyRow(d) {
   const selected = d.evidence.find((c) => c.id === d.selection);
   return `<div class="decision"><strong>${esc(d.topic)} · ${selected ? "채택" : d.selection === "hold" ? "보류" : "철회"}</strong><p>${selected ? esc(d.excerpt?.quote ?? selected.quote) : d.selection === "hold" ? "판단을 보류했습니다." : "안내를 철회했습니다."}</p><p class="muted">${esc(d.actor)} · ${esc(d.note)}</p><small>${esc(new Date(d.created).toLocaleString("ko-KR"))}</small><details><summary>결정 당시 원문 ${d.evidence.length}개</summary>${d.evidence.map((x) => `<div>${sourceBtn(x, x.path)} <small>${x.start}–${x.end}행</small></div>`).join("")}</details></div>`;
 }
-function changes({before, after, reason}) {
+function changes({before, after, reason, exceptions}) {
   function side(item, title, message) {
     if (!item) return `<section class="quote"><h3>${title}</h3><p>${message}</p></section>`;
     const refs = Object.entries(item.links).map(([name, url]) =>
       `<div><b>${esc(name)}</b><br><code>${esc(url)}</code></div>`).join("");
-    return `<section class="quote"><h3>${title}</h3><small>${sourceBtn(item, item.path)} · ${item.start}~${item.end}행</small><p>${marked(item.quote)}</p>${refs}</section>`;
+    const lines = item.start === item.end ? item.start : item.start + "~" + item.end;
+    return `<section class="quote"><h3>${title}</h3><small>${sourceBtn(item, item.path)} · ${lines}행</small><p>${marked(item.quote)}</p>${refs}</section>`;
+  }
+  if (reason === "exception") {
+    const previous = exceptions.removed.map(item => side(item, "채택 당시 예외 문구", "")).join("");
+    const latest = exceptions.added.map(item => side(item, "현재 예외 문구", "")).join("");
+    return `<div class="revision"><p class="notice">채택한 문장은 그대로입니다. 예외 조항이 바뀌어 적용 범위를 다시 확인해야 합니다.</p>
+      <div class="compare"><div>${side(before, "채택한 기준", "")}${previous}</div>
+      <div>${latest || side(after, "현재 원문 · 이전 예외 삭제", "")}</div></div></div>`;
   }
   return `<div class="revision"><div class="compare">
     ${side(before, "채택 당시", "")}

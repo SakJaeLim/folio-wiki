@@ -4,6 +4,8 @@ import itertools
 import re
 from difflib import SequenceMatcher
 
+from .qualifiers import following_qualifiers
+
 # Same-file Markdown references: explicit, collapsed and shortcut forms.
 DEFINITION = re.compile(
     r"^ {0,3}\[([^\]\n]+)\]:[ \t]*(?:<([^>\n]+)>|(\S+))", re.MULTILINE
@@ -138,5 +140,51 @@ def comparison(chosen, items):
         and normalized(old["quote"]) == normalized(current["quote"])
         and old["links"] == current["links"]
     ):
+        if index is not None:
+            changes = exception_changes(chosen, item, index, part)
+            if changes:
+                return {
+                    "before": old,
+                    "after": current,
+                    "reason": "exception",
+                    "exceptions": changes,
+                }
         return None
     return {"before": old, "after": current, "reason": reason or "changed"}
+
+
+def exception_changes(chosen, current, index, matched):
+    """Compare applicable clauses against the edition the reviewer actually adopted."""
+    original_parts, current_parts = units(chosen), units(current)
+    current_index = current_parts.index(matched)
+
+    def evidence(item, parts, at):
+        found = {}
+        for clause in following_qualifiers(item, parts, at):
+            source = excerpt(item, clause)
+            key = (normalized(source["quote"]), tuple(sorted(source["links"].items())))
+            found[key] = source
+        return found
+
+    old = evidence(chosen, original_parts, index)
+    new = evidence(current, current_parts, current_index)
+    if old.keys() == new.keys():
+        return None
+
+    def present(item, parts):
+        return {
+            (
+                normalized(p["quote"]),
+                tuple(sorted(links(p["quote"], item["references"]).items())),
+            )
+            for p in parts
+        }
+
+    # Inserting an unrelated paragraph can move an unchanged exception across
+    # a block boundary. Do not report its text as added or removed in that case.
+    formerly_present = present(chosen, original_parts)
+    now_present = present(current, current_parts)
+    removed = [v for k, v in old.items() if k not in now_present]
+    added = [v for k, v in new.items() if k not in formerly_present]
+    if removed or added:
+        return {"removed": removed, "added": added}
