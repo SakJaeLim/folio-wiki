@@ -11,6 +11,8 @@ from urllib.parse import parse_qs, urlsplit
 
 from . import bizinfo
 from .documents import digest
+from . import hwp_notice
+from .proof_rules import proof_links, proof_markdown
 from .notice_text import attachment_md, candidate_terms, pages, root_rules
 from .store import Conflict, Store, pack
 
@@ -79,6 +81,25 @@ class NoticeImports:
             with tempfile.TemporaryDirectory(dir=home) as staging:
                 folder = Path(staging)
                 receipt = self.prepare(page, title, files, home, folder)
+                if (home / "wiki.sqlite3").is_file():
+                    try:
+                        _, previous = self.receipt(key)
+                    except ValueError:
+                        previous = {}
+                    known = {
+                        f["url"]
+                        for f in previous.get("files", [])
+                        if f.get("path") and f["name"].lower().endswith(".hwp")
+                    }
+                    for f in receipt["files"]:
+                        if (
+                            f["url"] in known
+                            and f["role"] in ("본문", "첨부", "FAQ")
+                            and not f.get("path")
+                        ):
+                            raise ValueError(
+                                f"{f['name']}: {f['status']}. 이전에 읽은 판본을 유지합니다."
+                            )
                 receipt["id"] = key
                 receipt["revision"] = digest(pack(receipt))
                 self.store(key).sync(folder, workspace=home, notice_receipt=receipt)
@@ -87,6 +108,7 @@ class NoticeImports:
     def prepare(self, page, title, files, home, folder):
         inventory, supplements, catalog = [], {}, []
         main, rules, total = None, {}, 0
+        main_parts, proof_sources, proof_notes = [], {}, []
         for f in files:
             role, reason = bizinfo.classify(title, f)
             row = {"name": f.name, "url": f.stable, "role": role, "status": reason}
@@ -94,9 +116,9 @@ class NoticeImports:
             if role in ("제외", "참고"):
                 continue
             is_root = role == "본문"
-            if not f.name.lower().endswith((".pdf", ".hwpx")):
+            if not f.name.lower().endswith((".pdf", ".hwpx", ".hwp")):
                 if is_root:
-                    raise ValueError("본문은 텍스트 PDF 또는 HWPX가 필요합니다.")
+                    raise ValueError("본문은 텍스트 PDF, HWP 5 또는 HWPX가 필요합니다.")
                 row["status"] = "목록에서 발견. 이 파일 형식은 분석하지 않음"
                 continue
             # Fail the whole refresh on network errors rather than replacing a
@@ -114,7 +136,11 @@ class NoticeImports:
                     tmp.write(raw)
                 os.replace(tmp.name, raw_dir / checksum)
             try:
-                parts = pages(raw, f.name, is_root)
+                proof_rows = []
+                if f.name.lower().endswith(".hwp"):
+                    parts, proof_rows = hwp_notice.read_blocks(hwp_notice.convert(raw))
+                else:
+                    parts = pages(raw, f.name, is_root)
             except ValueError as exc:
                 if is_root:
                     raise
@@ -136,20 +162,44 @@ class NoticeImports:
             }
             if is_root:
                 main = record
+                main_parts = parts
                 rules = root_rules(parts)
             else:
-                supplements[path] = parts
-                md = attachment_md(parts)
+                checklist = (
+                    role == "첨부"
+                    and proof_rows
+                    and any(
+                        s in f.name.replace(" ", "")
+                        for s in ("제출서류", "제출목록", "증빙서류")
+                    )
+                )
+                if checklist:
+                    md = proof_markdown(proof_rows)
+                else:
+                    md = attachment_md(parts)
                 if len(md.encode()) > 512_000:
                     row.pop("path")
                     row["status"] = "추출 본문이 512 KB를 넘어 분석하지 않음"
-                    del supplements[path]
                     continue
+                if checklist:
+                    proof_sources[path] = proof_rows
+                    proof_notes.extend(
+                        {"path": path, "location": location, "text": value}
+                        for location, value in parts
+                        if location.startswith("HWP 문단")
+                        and ("신청 시 제출" in value or "발급일" in value)
+                    )
+                else:
+                    supplements[path] = parts
                 (folder / path).write_bytes(md.encode())
             catalog.append(record)
         if not main:
             raise ValueError("공고명과 연도가 일치하는 본문을 찾을 수 없습니다.")
         rule_terms = candidate_terms(rules, supplements.values())
+        proof, targets, unresolved = proof_links(main_parts, proof_sources)
+        rules.update(proof)
+        if targets:
+            main["proof_targets"] = targets
         md = "\n".join(
             f"## {heading}\n{quote}\n" for heading, (_, quote) in rules.items()
         )
@@ -172,6 +222,9 @@ class NoticeImports:
             "files": inventory,
             "locations": {head: pos for head, (pos, _) in rules.items()},
             "rule_terms": rule_terms,
+            "proof_topics": list(proof),
+            "proof_unresolved": unresolved,
+            "proof_notes": proof_notes,
         }
 
     def view(self, key):

@@ -58,8 +58,10 @@ def run(corpus):
             ASSETS["root26.pdf"][2],
             ASSETS["faq26.pdf"][2],
         )
-        assert len(clean["files"]) == 6 and len(clean["topics"]) == 1
-        topic = clean["topics"][0]
+        assert len(clean["files"]) == 6
+        (topic,) = (
+            t for t in clean["topics"] if t["name"] not in clean.get("proof_topics", [])
+        )
         assert (
             clean["locations"][topic["name"]] == "PDF 2쪽"
             and "기계장치" in topic["name"]
@@ -73,9 +75,12 @@ def run(corpus):
         )
         mixed = True
         replay = service.import_url(BIZ)
-        assert len(replay["files"]) == 8 and len(replay["topics"]) == 1
-        assert replay["topics"][0]["matches"] == topic["matches"]
-        assert replay["topics"][0]["status"] == "adopted"
+        assert len(replay["files"]) == 8 and len(replay["topics"]) == len(
+            clean["topics"]
+        )
+        checked = next(t for t in replay["topics"] if t["name"] == topic["name"])
+        assert checked["matches"] == topic["matches"]
+        assert checked["status"] == "adopted"
         rejected = [f for f in replay["files"] if f["role"] == "제외"]
         assert {f["raw_sha256"] for f in rejected} == {ASSETS[k][2] for k in names}
         return {

@@ -88,6 +88,19 @@ def read_catalog(folder, docs):
             for k, v in mapping.items()
         ):
             raise ValueError(f"{path}: 기준별 연결 단어를 확인해 주세요.")
+        targets = row.get("proof_targets", {})
+        if not isinstance(targets, dict) or any(
+            not isinstance(group, dict)
+            or not group
+            or any(
+                not isinstance(locations, list)
+                or not locations
+                or not all(isinstance(s, str) and s for s in locations)
+                for locations in group.values()
+            )
+            for group in targets.values()
+        ):
+            raise ValueError(f"{path}: 증빙 표의 원문 위치를 확인해 주세요.")
         catalog[path] = row
     return catalog
 
@@ -126,6 +139,11 @@ def bundles(catalog, files):
             "identity": identity,
             "terms": sorted(set(root.get("terms", []))),
             "members": members,
+            **(
+                {"proof_targets": root["proof_targets"]}
+                if "proof_targets" in root
+                else {}
+            ),
             **({"rule_terms": root["rule_terms"]} if "rule_terms" in root else {}),
         }
     return result
@@ -185,6 +203,26 @@ def evidence(selected, root_sections, bundle, edition):
             topic = section["topic"]
             coverage = row["scope"] or topic
             if scope and coverage != scope and not coverage.startswith(scope + " / "):
+                continue
+            proof = bundle.get("proof_targets", {}).get(selected["topic"], {})
+            if (
+                topic.startswith("HWP 표 ")
+                and topic in proof.get(path, ())
+                and not audience
+            ):
+                item = excerpt(section)
+                item.update(
+                    section=topic,
+                    publication=bundle["identity"][0],
+                    year=bundle["identity"][1],
+                    program=bundle["identity"][2],
+                    source_url=row["url"],
+                    role=row["role"],
+                )
+                # A row moving within the same file does not change the document requirement.
+                key_text = re.sub(r" · HWP 표 t\d+(?=\])", "", item["quote"])
+                found[row["url"], selected["topic"], normalized(key_text), ()] = item
+            if proof or topic.startswith("HWP 표 ") and re.search(r" \d+행$", topic):
                 continue
             for p in paragraphs(section):
                 text = p["quote"].lstrip(" \t☞※•*-")

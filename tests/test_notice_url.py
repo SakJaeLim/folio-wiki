@@ -129,11 +129,12 @@ class NoticeTest(unittest.TestCase):
             self.files[i] = hwpx(
                 [heading + " 주요 질의응답", "측정장비는 개인 용도로 구매 불가합니다."]
             )
+        self.files[8] = b"invalid data"
         d = self.run_import()
         self.assertEqual([f["role"] for f in d["files"]].count("제외"), 4)
         self.assertEqual(len(d["topics"][0]["matches"]), 1)
-        self.assertEqual(self.fetched, [2, 5, 6, 1])
-        self.assertIn("분석하지 않음", d["files"][-2]["status"])
+        self.assertEqual(self.fetched, [2, 5, 6, 8, 1])
+        self.assertIn("HWP 5", d["files"][-2]["status"])
         self.assertEqual(len(d["files"]), 8)
 
     def test_negative_wording_and_unrelated_topics(self):
@@ -145,6 +146,43 @@ class NoticeTest(unittest.TestCase):
             ]
         )
         self.assertFalse(self.run_import()["topics"])
+
+    def test_checklist_confirmation_and_change(self):
+        self.rows = [(3, "증빙서류 제출목록.hwp")]
+        self.files[1] = hwpx(["번호 필수 제출서류 비고", "1 등록확인서"])
+        self.files[3] = b"version 1"
+        cells = [
+            [{"text": "구분"}, {"text": "제출서류"}],
+            [{"text": "1"}, {"text": "등록확인서(대표자 서명)"}],
+        ]
+        blocks = [{"type": "table", "table": {"sourceId": "t1", "cells": cells}}]
+        with patch("folio.hwp_notice.convert", return_value=blocks):
+            current = self.run_import()
+            self.assertEqual(len(current["proof_topics"]), 1)
+            self.confirm(current)
+            with patch(
+                "folio.hwp_notice.convert",
+                side_effect=ValueError("converter unavailable"),
+            ):
+                with self.assertRaisesRegex(ValueError, "이전에 읽은 판본"):
+                    self.run_import()
+                self.assertEqual(
+                    self.service.view(current["id"])["topics"][0]["status"], "adopted"
+                )
+            # Insert a nonmatching row without changing the approved content.
+            cells.insert(1, [{"text": "9"}, {"text": "관련 없는 증명서"}])
+            self.files[3] = b"version 2"
+            moved = self.run_import()
+            self.assertEqual(moved["topics"][0]["status"], "adopted")
+            cells[-1][1]["text"] = "등록확인서(대표자 날인)"
+            self.files[3] = b"version 3"
+            changed = self.run_import()["topics"][0]
+            self.assertEqual(changed["status"], "review_again")
+            self.assertIn(
+                "대표자 서명",
+                changed["comparison"]["exceptions"]["removed"][0]["quote"],
+            )
+            self.assertIn("대표자 날인", changed["matches"][0]["quote"])
 
     def test_bad_refresh_preserves_decision(self):
         d = self.run_import()
