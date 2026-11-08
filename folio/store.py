@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .anchors import comparison, definitions, links, units
+from .cross_sections import with_cross_changes
 from .documents import digest, public_files, sections
 
 
@@ -14,6 +15,38 @@ def now():
 
 def pack(value):
     return json.dumps(value, ensure_ascii=False, sort_keys=True)
+
+
+def source_sections(doc):
+    refs = definitions(doc["body"])
+    items = sections(doc)
+    for item in items:
+        item["references"] = links(item["quote"], refs)
+    return items
+
+
+def changed_evidence(db, chosen, items, editions, current_version):
+    path, version = chosen["path"], chosen["version"]
+    key = path, version
+    if key not in editions and (current_version or "references" not in chosen):
+        saved = db.execute(
+            "SELECT * FROM sources WHERE path=? AND version=?", key
+        ).fetchone()
+        editions[key] = source_sections(dict(saved))
+    if "references" not in chosen:
+        # Legacy decisions stored a section ID and a byte-exact source version.
+        archived = next(item for item in editions[key] if item["id"] == chosen["id"])
+        chosen["references"] = archived["references"]
+    change = comparison(chosen, items)
+    if (
+        not current_version
+        or current_version == version
+        or (change and change["reason"] != "exception")
+    ):
+        return change
+    return with_cross_changes(
+        chosen, editions[key], editions[path, current_version], change
+    )
 
 
 class Conflict(ValueError):
@@ -47,6 +80,12 @@ class Store:
                 r["name"] for r in db.execute("PRAGMA table_info(topics)")
             }:
                 db.execute("ALTER TABLE topics ADD COLUMN comparison TEXT")
+            if "headings" not in {
+                r["name"] for r in db.execute("PRAGMA table_info(snapshots)")
+            }:
+                db.execute(
+                    "ALTER TABLE snapshots ADD COLUMN headings TEXT NOT NULL DEFAULT '{}'"
+                )
 
     @contextmanager
     def db(self):
@@ -63,10 +102,11 @@ class Store:
         refs = {p: d["version"] for p, d in sorted(docs.items())}
         manifest = digest(pack(refs))
         groups = {}
+        editions = {}
         for doc in docs.values():
-            refs_by_label = definitions(doc["body"])
-            for item in sections(doc):
-                item["references"] = links(item["quote"], refs_by_label)
+            items = source_sections(doc)
+            editions[doc["path"], doc["version"]] = items
+            for item in items:
                 groups.setdefault(item["topic"], []).append(item)
         with self.db() as db:
             db.execute("BEGIN IMMEDIATE")
@@ -76,7 +116,7 @@ class Store:
                 raise ValueError("이 저장 공간은 다른 폴더에 연결되어 있습니다.")
             db.execute("INSERT OR IGNORE INTO workspace VALUES (1,?)", (root_key,))
             prev = db.execute("SELECT snapshot FROM current WHERE id=1").fetchone()
-            migrated = db.execute("PRAGMA user_version").fetchone()[0] >= 2
+            migrated = db.execute("PRAGMA user_version").fetchone()[0] >= 3
             if prev and prev[0] == manifest and migrated:
                 return manifest
             for d in docs.values():
@@ -87,6 +127,13 @@ class Store:
             db.execute(
                 "INSERT OR IGNORE INTO snapshots(id,files,created) VALUES (?,?,?)",
                 (manifest, pack(refs), now()),
+            )
+            headings = {
+                p: list(dict.fromkeys(i["topic"] for i in editions[p, v]))
+                for p, v in refs.items()
+            }
+            db.execute(
+                "UPDATE snapshots SET headings=? WHERE id=?", (pack(headings), manifest)
             )
             existing = {r["name"]: r for r in db.execute("SELECT * FROM topics")}
             for topic in sorted(set(existing) | set(groups)):
@@ -117,15 +164,9 @@ class Store:
                             for c in json.loads(decision["evidence"])
                             if c["id"] == selection
                         )
-                        if "references" not in chosen:
-                            archived = db.execute(
-                                "SELECT body FROM sources WHERE path=? AND version=?",
-                                (chosen["path"], chosen["version"]),
-                            ).fetchone()
-                            chosen["references"] = links(
-                                chosen["quote"], definitions(archived["body"])
-                            )
-                        change = comparison(chosen, items)
+                        change = changed_evidence(
+                            db, chosen, items, editions, refs.get(chosen["path"])
+                        )
                         status = "review_again" if change else "adopted"
                 generation = prior["generation"] + 1 if prior else 1
                 db.execute(
@@ -140,10 +181,20 @@ class Store:
                 )
             db.execute("INSERT OR REPLACE INTO current VALUES (1,?)", (manifest,))
             if not migrated:
-                db.execute("PRAGMA user_version=2")
+                db.execute("PRAGMA user_version=3")
         return manifest
 
-    def decide(self, topic, generation, selection, actor, note, unit=None):
+    def decide(
+        self,
+        topic,
+        generation,
+        selection,
+        actor,
+        note,
+        unit=None,
+        scope="",
+        audience="",
+    ):
         if not all(
             isinstance(v, str) and v.strip() for v in (topic, selection, actor, note)
         ):
@@ -160,6 +211,13 @@ class Store:
                     "자료나 결정이 바뀌었습니다. 현재 원문을 다시 확인해 주세요."
                 )
             items = json.loads(row["candidates"])
+            if (
+                not isinstance(scope, str)
+                or not isinstance(audience, str)
+                or len(audience) > 160
+            ):
+                raise ValueError("적용할 사업 절과 대상 이름을 확인해 주세요.")
+            scope, audience = scope.strip(), audience.strip()
             if selection not in {"withdraw", "hold"} and not any(
                 i["id"] == selection for i in items
             ):
@@ -173,6 +231,18 @@ class Store:
                 ):
                     raise ValueError("현재 원문에 있는 문장을 선택해 주세요.")
                 chosen["unit"] = unit
+            if scope or audience:
+                chosen = next((c for c in items if c["id"] == selection), None)
+                if not chosen:
+                    raise ValueError("적용 대상을 지정할 원문을 선택해 주세요.")
+                headers = db.execute(
+                    "SELECT headings FROM snapshots JOIN current ON snapshots.id=current.snapshot"
+                ).fetchone()
+                if scope and scope not in json.loads(headers["headings"]).get(
+                    chosen["path"], []
+                ):
+                    raise Conflict("현재 원문의 사업 절을 선택해 주세요.")
+                chosen.update(scope=scope, audience=audience)
             db.execute(
                 "INSERT INTO decisions(topic,generation,selection,actor,note,evidence,created) VALUES(?,?,?,?,?,?,?)",
                 (
@@ -248,6 +318,7 @@ class Store:
         return {
             "snapshot": s.get("id"),
             "files": json.loads(s.get("files", "{}")),
+            "headings": json.loads(s.get("headings", "{}")),
             "engine": s.get("engine", "pending"),
             "detail": s.get("detail", ""),
             "pages": json.loads(s.get("pages", "[]")),

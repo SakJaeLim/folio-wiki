@@ -137,6 +137,8 @@ def main():
                             body["actor"],
                             body["note"],
                             body.get("unit"),
+                            body.get("scope", ""),
+                            body.get("audience", ""),
                         )
                     notify_engine()
                 elif url.path == "/api/advice":
