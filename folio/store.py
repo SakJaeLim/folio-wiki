@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .anchors import comparison, definitions, links, units
 from .documents import digest, public_files, sections
 
 
@@ -41,6 +42,11 @@ class Store:
                     note TEXT NOT NULL, evidence TEXT NOT NULL, created TEXT NOT NULL,
                     UNIQUE(topic,generation));
             """)
+            db.execute("BEGIN IMMEDIATE")
+            if "comparison" not in {
+                r["name"] for r in db.execute("PRAGMA table_info(topics)")
+            }:
+                db.execute("ALTER TABLE topics ADD COLUMN comparison TEXT")
 
     @contextmanager
     def db(self):
@@ -58,7 +64,9 @@ class Store:
         manifest = digest(pack(refs))
         groups = {}
         for doc in docs.values():
+            refs_by_label = definitions(doc["body"])
             for item in sections(doc):
+                item["references"] = links(item["quote"], refs_by_label)
                 groups.setdefault(item["topic"], []).append(item)
         with self.db() as db:
             db.execute("BEGIN IMMEDIATE")
@@ -68,7 +76,8 @@ class Store:
                 raise ValueError("이 저장 공간은 다른 폴더에 연결되어 있습니다.")
             db.execute("INSERT OR IGNORE INTO workspace VALUES (1,?)", (root_key,))
             prev = db.execute("SELECT snapshot FROM current WHERE id=1").fetchone()
-            if prev and prev[0] == manifest:
+            migrated = db.execute("PRAGMA user_version").fetchone()[0] >= 1
+            if prev and prev[0] == manifest and migrated:
                 return manifest
             for d in docs.values():
                 db.execute(
@@ -86,26 +95,54 @@ class Store:
                 )
                 candidates = pack(items)
                 prior = existing.get(topic)
-                if prior and prior["candidates"] == candidates:
+                if migrated and prior and prior["candidates"] == candidates:
                     continue
                 if not prior and (
                     len({i["path"] for i in items}) < 2
                     or len({" ".join(i["quote"].split()) for i in items}) < 2
                 ):
                     continue
-                reviewed = db.execute(
-                    "SELECT 1 FROM decisions WHERE topic=?", (topic,)
+                decision = db.execute(
+                    "SELECT selection,evidence FROM decisions WHERE topic=? ORDER BY id DESC LIMIT 1",
+                    (topic,),
                 ).fetchone()
-                status = "review_again" if reviewed else "open"
+                status, change = "open", None
+                if decision:
+                    selection = decision["selection"]
+                    if selection in ("hold", "withdraw"):
+                        status = "held" if selection == "hold" else "adopted"
+                    else:
+                        chosen = next(
+                            c
+                            for c in json.loads(decision["evidence"])
+                            if c["id"] == selection
+                        )
+                        if "references" not in chosen:
+                            archived = db.execute(
+                                "SELECT body FROM sources WHERE path=? AND version=?",
+                                (chosen["path"], chosen["version"]),
+                            ).fetchone()
+                            chosen["references"] = links(
+                                chosen["quote"], definitions(archived["body"])
+                            )
+                        change = comparison(chosen, items)
+                        status = "review_again" if change else "adopted"
                 generation = prior["generation"] + 1 if prior else 1
                 db.execute(
-                    "INSERT OR REPLACE INTO topics VALUES (?,?,?,?)",
-                    (topic, generation, candidates, status),
+                    "INSERT OR REPLACE INTO topics(name,generation,candidates,status,comparison) VALUES (?,?,?,?,?)",
+                    (
+                        topic,
+                        generation,
+                        candidates,
+                        status,
+                        pack(change) if change else None,
+                    ),
                 )
             db.execute("INSERT OR REPLACE INTO current VALUES (1,?)", (manifest,))
+            db.execute("PRAGMA user_version=1")
         return manifest
 
-    def decide(self, topic, generation, selection, actor, note):
+    def decide(self, topic, generation, selection, actor, note, unit=None):
         if not all(
             isinstance(v, str) and v.strip() for v in (topic, selection, actor, note)
         ):
@@ -126,6 +163,15 @@ class Store:
                 i["id"] == selection for i in items
             ):
                 raise Conflict("현재 원문 중에서 선택해 주세요.")
+            if unit is not None:
+                chosen = next((c for c in items if c["id"] == selection), None)
+                if (
+                    chosen is None
+                    or type(unit) is not int
+                    or not 0 <= unit < len(units(chosen))
+                ):
+                    raise ValueError("현재 원문에 있는 문장을 선택해 주세요.")
+                chosen["unit"] = unit
             db.execute(
                 "INSERT INTO decisions(topic,generation,selection,actor,note,evidence,created) VALUES(?,?,?,?,?,?,?)",
                 (
@@ -134,17 +180,20 @@ class Store:
                     selection,
                     actor.strip(),
                     note.strip(),
-                    row["candidates"],
+                    pack(items),
                     now(),
                 ),
             )
             if selection == "hold":
                 db.execute(
-                    "UPDATE topics SET status='held',generation=generation+1 WHERE name=?",
+                    "UPDATE topics SET status='held',comparison=NULL,generation=generation+1 WHERE name=?",
                     (topic,),
                 )
             else:
-                db.execute("UPDATE topics SET status='adopted' WHERE name=?", (topic,))
+                db.execute(
+                    "UPDATE topics SET status='adopted',comparison=NULL WHERE name=?",
+                    (topic,),
+                )
 
     def snapshot(self):
         with self.db() as db:
@@ -186,8 +235,14 @@ class Store:
             ]
         for t in topics:
             t["candidates"] = json.loads(t["candidates"])
+            t["comparison"] = json.loads(t["comparison"]) if t["comparison"] else None
+            for c in t["candidates"]:
+                c["units"] = units(c)
         for d in decisions:
             d["evidence"] = json.loads(d["evidence"])
+            chosen = next((c for c in d["evidence"] if c["id"] == d["selection"]), None)
+            if chosen and "unit" in chosen:
+                d["excerpt"] = units(chosen)[chosen["unit"]]
         s = dict(snapshot) if snapshot else {}
         return {
             "snapshot": s.get("id"),

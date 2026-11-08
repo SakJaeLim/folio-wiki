@@ -38,7 +38,7 @@ The UI and sample documents are in Korean. Local demo files and history persist 
 | An incoming project lead inherits an old procedure and a revised announcement | Both passages the previous lead saw and the version that changed |
 | A team republishes guidance after a source edit | Which decision needs another review and the evidence behind the previous one |
 
-The pilot finds passages under matching Markdown heading paths in different files. A reviewer decides which passage applies. An unrelated edit elsewhere in a cited file can also reopen a decision. Organizational accounts, document-level permissions and cloud-drive sync are outside the current implementation.
+When passages disagree under matching headings, choose the source and the sentence your team will use. You can also adopt the entire section. Existing decisions keep their original section scope. Changes to the selected wording or a referenced Markdown link destination reopen the decision and show the adopted and current evidence side by side. Edits elsewhere leave it active. Missing or ambiguous passages require review. Folio does not fetch linked web pages or infer that an exception added elsewhere overrides a saved sentence.
 
 ## What this repository implements
 
@@ -68,6 +68,8 @@ python run.py --folder "/path/to/public-markdown" --weknora-url http://127.0.0.1
 [Open the team wiki](http://127.0.0.1:8848/). Folio checks the folder every four seconds. Each folder version gets its own WeKnora knowledge base and draft. The engine must allow registration of the local test account. Set `OLLAMA_BASE_URL` for another Ollama address and `FOLIO_CHAT_MODEL_ID` / `FOLIO_EMBED_MODEL_ID` for models already registered on an existing engine. For a source outline, use a Python environment with PageIndex 0.2.10. To enable Jev, authenticate the CLI and start the app with `--enable-jev`.
 
 ## Validation and research
+
+Replaying four public guide revisions reduced reopened decisions from 17 to 3. On two Korean agencies’ corrections, both ordinary document comparison and Folio found all three affected decisions. [Pilot results and official notices (Korean)](docs/research/revision-pilot.md)
 
 With synthetic public fixtures, the app reopened an adopted rule and recovered its original passage. On the tested CPU, the initial WeKnora draft and index took about nine minutes. Some Lite source lookups logged SQLite warnings. [Observed results](docs/VALIDATION.md)
 

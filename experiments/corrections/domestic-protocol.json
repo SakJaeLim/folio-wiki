@@ -1,0 +1,87 @@
+{
+  "unit": "One previously adopted instruction in an official HWPX attachment. Paragraph numbers refer to saved UTF-8 extraction, without decorative headings.",
+  "scope": "All document text retained in both arms. Add the same literal heading landmarks from old business fields to each edition. An editorial question sheet opens the existing two-file Folio review workflow; it is not an official source. Adopt from the OLD edition before sync. Eligibility for sampling: an identifiable operational field in the original notice. Selection is purposive; both editions had been inspected, so this is not a blind holdout.",
+  "arms": [
+    "Unified diff of all extracted paragraphs; a strong baseline maps changed old paragraph ranges to the same saved decision lines.",
+    "Actual Folio store, one sentence per topic. Reopen only if its selected evidence changes. Capture exact before/after and source versions."
+  ],
+  "metrics": [
+    "changed-field detection, false reopens among unchanged decisions",
+    "amount of raw changed material versus named decisions to inspect, in different units",
+    "presence of prior decision owner, rationale and both version pointers without manually joining records; no human timings"
+  ],
+  "cases": [
+    [
+      "jb",
+      "접수 기간",
+      "^가\\. 신청기간",
+      24,
+      "09:00",
+      true,
+      "언제까지 평가서를 접수하는가?"
+    ],
+    [
+      "jb",
+      "접수 방법",
+      "^다\\. 신청방법",
+      27,
+      "직접 방문",
+      false,
+      "우편으로 접수할 수 있는가?"
+    ],
+    [
+      "jb",
+      "용역 기간",
+      "^마\\. 용역기간",
+      13,
+      "착수일로부터",
+      false,
+      "용역 기간은 얼마인가?"
+    ],
+    [
+      "jb",
+      "발표 일시",
+      "^다\\. 발표일시",
+      43,
+      "2026.",
+      false,
+      "선정 결과 발표 예정일은?"
+    ],
+    [
+      "gg",
+      "입찰서 제출",
+      "^나\\. 제출기간",
+      102,
+      "10:00",
+      true,
+      "전자입찰 제출 마감은 언제인가?"
+    ],
+    [
+      "gg",
+      "개찰 일시",
+      "^다\\. 개찰일시 및 장소",
+      104,
+      "11:00",
+      true,
+      "개찰은 언제 하는가?"
+    ],
+    [
+      "gg",
+      "용역 기간",
+      "^용역기간$",
+      20,
+      "607일",
+      false,
+      "공사 관리 용역 기간은 얼마인가?"
+    ],
+    [
+      "gg",
+      "기초금액",
+      "^기초금액$",
+      24,
+      "2,542,826,000원",
+      false,
+      "입찰 기초금액은 얼마인가?"
+    ]
+  ]
+}

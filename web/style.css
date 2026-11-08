@@ -237,6 +237,16 @@ h3 {
 .quote h3 {
   margin: 8px 0;
 }
+.scope { margin-top: 8px; }
+.scope select { display: block; max-width: 100%; width: 100%; padding: 6px; font: inherit; }
+.revision { background: #eeeee7; padding: 12px; margin: 14px 0; }
+.revision .compare { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 520px) {
+  .revision .compare { grid-template-columns: 1fr; }
+}
+.revision .quote:first-child { border-top: 3px solid #a86955; }
+.revision .quote:last-child { border-top: 3px solid #597861; }
+.revision code { overflow-wrap: anywhere; }
 .quote p {
   white-space: pre-wrap;
   font-size: 19px;
