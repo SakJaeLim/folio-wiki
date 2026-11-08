@@ -38,7 +38,7 @@ The UI and sample documents are in Korean. Local demo files and history persist 
 | An incoming project lead inherits an old procedure and a revised announcement | Both passages the previous lead saw and the version that changed |
 | A team republishes guidance after a source edit | Which decision needs another review and the evidence behind the previous one |
 
-When passages disagree under matching headings, choose the source and the sentence your team will use. You can also adopt the entire section. Existing decisions keep their original section scope. Changes to the selected wording or a referenced Markdown link destination reopen the decision and show the adopted and current evidence side by side. Edits elsewhere leave it active. Missing or ambiguous passages require review. Folio does not fetch linked web pages or infer that an exception added elsewhere overrides a saved sentence.
+When passages disagree under matching headings, choose the source and the sentence your team will use. You can also adopt the entire section. Existing decisions keep their original section scope. Changes to the selected wording or a referenced Markdown link destination reopen the decision. For a selected sentence, Folio also checks the following policy text for explicit changes to voting, application or submission permissions and for waivers of the selected requirement. The review shows the exact clause and its archived source version. The reviewer decides what applies. Missing or ambiguous passages also require review. [Public election-guide replay, controls and detection boundaries (Korean)](docs/research/exception-review.md)
 
 ## What this repository implements
 

@@ -76,7 +76,7 @@ class Store:
                 raise ValueError("이 저장 공간은 다른 폴더에 연결되어 있습니다.")
             db.execute("INSERT OR IGNORE INTO workspace VALUES (1,?)", (root_key,))
             prev = db.execute("SELECT snapshot FROM current WHERE id=1").fetchone()
-            migrated = db.execute("PRAGMA user_version").fetchone()[0] >= 1
+            migrated = db.execute("PRAGMA user_version").fetchone()[0] >= 2
             if prev and prev[0] == manifest and migrated:
                 return manifest
             for d in docs.values():
@@ -139,7 +139,8 @@ class Store:
                     ),
                 )
             db.execute("INSERT OR REPLACE INTO current VALUES (1,?)", (manifest,))
-            db.execute("PRAGMA user_version=1")
+            if not migrated:
+                db.execute("PRAGMA user_version=2")
         return manifest
 
     def decide(self, topic, generation, selection, actor, note, unit=None):
