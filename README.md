@@ -14,6 +14,16 @@
 
 [MP4 다운로드](https://github.com/SakJaeLim/folio-wiki/raw/refs/heads/main/docs/media/deadline-review.mp4) · [구성도](docs/ARCHITECTURE.md) · [실행 검증](docs/VALIDATION.md)
 
+## 공고 주소로 기준 확인하기
+
+예비창업패키지 사업비로 사무실 책상을 살 수 있을까요? 공고 본문에는 기계와 비품의 구매 비용이 적혀 있습니다. 별첨 FAQ를 열어야 사무용 가구에 적용되는 제한과 시제품 제작에 쓸 수 있는 비용을 구분할 수 있습니다.
+
+아래 방법으로 앱을 실행한 뒤 **공고 가져오기**에 [기업마당 공고 주소](https://www.bizinfo.go.kr/sii/siia/selectSIIA200Detail.do?pblancId=PBLN_000000000119859)를 붙여 넣으세요. Folio가 공식 파일 6개를 찾아 본문 2쪽과 FAQ 15쪽을 보여 줍니다. 쪽 번호를 누르면 그때 읽은 PDF를 열 수 있습니다. 두 문구를 대조한 뒤 **이 연결 확인**을 누르면 팀 위키에 기록됩니다. 같은 주소를 다시 가져오면 바뀐 근거를 확인할 수 있습니다.
+
+이 기능은 기업마당의 공고 상세 페이지를 지원합니다. PDF를 읽으려면 `pdftotext`가 PATH에 있어야 합니다. HWPX는 별도 설치 없이 읽습니다. HWP, 양식, 매뉴얼 등은 목록에서 처리 상태를 확인할 수 있습니다. 현재는 제목이나 표의 비목과 첨부의 제한 문장에 같은 표현이 있는 경우를 찾습니다. [실제 공고와 대조 시험](docs/research/notice-url.md)
+
+[![공고 본문과 FAQ에서 기계장치 구매 기준을 확인하는 화면](docs/media/notice-url-review.png)](docs/media/notice-url-review.png)
+
 ## 직접 써보기
 
 Git과 Python 3.10 이상이 있는 PC에서 아래 세 줄을 실행하세요. 데모에는 Python 표준 라이브러리만 씁니다.

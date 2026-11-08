@@ -2,10 +2,14 @@ import concurrent.futures
 import hashlib
 import json
 import re
+import sys
 import urllib.request
 import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from folio.hwpx_text import paragraphs  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent
 GG = "https://www.gg.go.kr"
@@ -38,34 +42,6 @@ EXPECTED = {
     "jb-old": "f2d17b5fb6aea2b87b76bfe1b8abd5f357284c95eff322680fb72ecf1a7c5b5e",
     "jb-new": "41f8231938d97ab8684f97c1a5bca3a0cf8e80fe03fef9ee0ce94e4126532a19",
 }
-
-
-def paragraphs(node):
-    # Flush surrounding paragraph fragments before/after a nested table cell.
-    parts = []
-
-    def flush():
-        line = "".join(parts).strip()
-        parts.clear()
-        if line:
-            lines.append(line)
-
-    def walk(el):
-        name = el.tag.rsplit("}", 1)[-1]
-        if name == "p":
-            flush()
-        if name == "t":
-            parts.append("".join(el.itertext()))
-        else:
-            for ch in el:
-                walk(ch)
-        if name == "p":
-            flush()
-
-    lines = []
-    walk(node)
-    flush()
-    return lines
 
 
 def fetch(k):

@@ -200,7 +200,7 @@ class Store:
         finally:
             db.close()
 
-    def sync(self, folder):
+    def sync(self, folder, *, workspace=None, notice_receipt=None):
         docs = public_files(folder)
         refs = {p: d["version"] for p, d in sorted(docs.items())}
         catalog = companions.read_catalog(folder, docs)
@@ -219,7 +219,26 @@ class Store:
                 groups.setdefault(item["topic"], []).append(item)
         with self.db() as db:
             db.execute("BEGIN IMMEDIATE")
-            root_key = str(Path(folder).resolve(strict=True))
+            root_key = str(Path(workspace or folder).resolve(strict=True))
+            if notice_receipt is not None:
+                db.execute(
+                    "CREATE TABLE IF NOT EXISTS notice_import(id INTEGER PRIMARY KEY CHECK(id=1), receipt TEXT NOT NULL)"
+                )
+                db.execute(
+                    "INSERT OR REPLACE INTO notice_import VALUES(1,?)",
+                    (pack(notice_receipt),),
+                )
+                db.execute(
+                    "CREATE TABLE IF NOT EXISTS notice_original(sha TEXT PRIMARY KEY, name TEXT NOT NULL)"
+                )
+                db.executemany(
+                    "INSERT OR IGNORE INTO notice_original VALUES(?,?)",
+                    [
+                        (f["raw_sha256"], f["name"])
+                        for f in notice_receipt["files"]
+                        if "raw_sha256" in f
+                    ],
+                )
             workspace = db.execute("SELECT folder FROM workspace WHERE id=1").fetchone()
             if workspace and Path(workspace["folder"]) != Path(root_key):
                 raise ValueError("이 저장 공간은 다른 폴더에 연결되어 있습니다.")
@@ -267,9 +286,18 @@ class Store:
                     and not any(i["path"] in changed_roots for i in items)
                 ):
                     continue
-                if not prior and (
-                    len({i["path"] for i in items}) < 2
-                    or len({" ".join(i["quote"].split()) for i in items}) < 2
+                linked = any(
+                    topic in bundles.get(i["path"], {}).get("rule_terms", {})
+                    for i in items
+                )
+                if (
+                    not prior
+                    and not linked
+                    and (
+                        notice_receipt is not None
+                        or len({i["path"] for i in items}) < 2
+                        or len({" ".join(i["quote"].split()) for i in items}) < 2
+                    )
                 ):
                     continue
                 decision = db.execute(
@@ -330,6 +358,8 @@ class Store:
         unit=None,
         scope="",
         audience="",
+        *,
+        notice_revision=None,
     ):
         if not all(
             isinstance(v, str) and v.strip() for v in (topic, selection, actor, note)
@@ -341,6 +371,15 @@ class Store:
             )
         with self.db() as db:
             db.execute("BEGIN IMMEDIATE")
+            if notice_revision is not None:
+                active = db.execute(
+                    "SELECT receipt FROM notice_import WHERE id=1"
+                ).fetchone()
+                if (
+                    not active
+                    or json.loads(active["receipt"])["revision"] != notice_revision
+                ):
+                    raise Conflict("공고 판본이 바뀌었습니다. 다시 확인해 주세요.")
             row = db.execute("SELECT * FROM topics WHERE name=?", (topic,)).fetchone()
             if not row or row["generation"] != generation or row["status"] == "adopted":
                 raise Conflict(
