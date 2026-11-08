@@ -6,6 +6,7 @@ const tabs = {
   wiki: "팀 위키",
   sources: "원문 보관함",
   history: "결정 기록",
+  notices: "공고 가져오기",
 };
 const saved = new Map();
 let view = "wiki",
@@ -133,6 +134,7 @@ function render() {
   document
     .querySelectorAll("nav button")
     .forEach((b) => b.classList.toggle("active", b.dataset.view === view));
+  if (view === "notices") return renderNotices();
   const statuses = {
     ready: "WeKnora 초안 준비됨",
     building: "WeKnora 초안 작성 중",
@@ -195,6 +197,7 @@ function render() {
           <h3>${esc(title)}</h3><div class="wiki-prose">${wikiBody(page.content,pages)}</div></article>`;
       }).join("")}</section>`;
   }
+  if (view === "wiki" || view === "history") html += noticeDecisions(data.notice_decisions || [], view);
   desk.innerHTML = html;
 }
 async function load(force = false) {
@@ -207,12 +210,17 @@ async function load(force = false) {
 document.querySelector("nav").onclick = (e) => {
   const b = e.target.closest("[data-view]");
   if (b) {
+    if (b.dataset.view === 'notices') refreshNotices();
     view = b.dataset.view;
     render();
   }
 };
 document.querySelector("#sync").onclick = async () => {
   try {
+    if (view === "notices") {
+      if (!noticeData) return refreshNotices();
+      return noticeAction(async () => { noticeData = await api("/api/notice/import", {url: noticeData.url}); });
+    }
     await api("/api/sync", {});
     await load(true);
     toast("현재 폴더를 다시 읽었습니다.");
@@ -222,6 +230,7 @@ document.querySelector("#sync").onclick = async () => {
 };
 document.querySelector("#close").onclick = () => dialog.close();
 desk.oninput = (e) => {
+  if (view === "notices") { noticeInput = e.target.value; return; }
   const f = e.target.closest("form");
   if (f) {
     const preview = e.target.closest(".quote")?.querySelector(".companion-preview");
@@ -235,6 +244,7 @@ desk.oninput = (e) => {
 };
 desk.onsubmit = async (e) => {
   e.preventDefault();
+  if (view === "notices") return importNotice(e.target);
   if (busy) return;
   const t = data.topics[+e.target.closest("[data-index]").dataset.index];
   const form = Object.fromEntries(new FormData(e.target));
@@ -268,6 +278,13 @@ desk.onsubmit = async (e) => {
   }
 };
 desk.onclick = async (e) => {
+  if (view === "notices") return noticeClick(e);
+  const official = e.target.closest("[data-notice-open]");
+  if (official) {
+    view = "notices";
+    render();
+    return noticeAction(() => openNotice(official.dataset.noticeOpen));
+  }
   const button = e.target.closest("[data-preview]");
   if (button) {
     const id = button.dataset.preview, form = button.closest("form");

@@ -14,6 +14,14 @@
 
 [Download MP4](https://github.com/SakJaeLim/folio-wiki/raw/refs/heads/main/docs/media/deadline-review.mp4) · [Architecture](docs/ARCHITECTURE.md) · [Validation](docs/VALIDATION.md)
 
+## Review an official notice from its URL
+
+Can a Korean startup grant pay for an office desk? The notice lists purchases of equipment and supplies. Its FAQ distinguishes office furniture from materials used to build a prototype.
+
+Start the app below, open **공고 가져오기** (Import notice) and paste the [Bizinfo notice URL](https://www.bizinfo.go.kr/sii/siia/selectSIIA200Detail.do?pblancId=PBLN_000000000119859). Folio lists six official files and shows the equipment rule on PDF page 2 alongside the FAQ on page 15. Each page link opens the archived original. Click **이 연결 확인** after reviewing the passages. The team wiki records the confirmation. Import the URL again to check for changes.
+
+This adapter supports Bizinfo detail pages. PDF extraction requires `pdftotext` on PATH. HWPX uses Python's standard library. The inventory identifies unsupported or reference-only files. Candidate discovery uses explicit restrictions and shared terms in labelled rules. [Replay and limitations](docs/research/notice-url.md) · [App screenshot](docs/media/notice-url-review.png)
+
 ## Try it
 
 Install Git and Python 3.10 or later. The workshop demo uses the Python standard library.

@@ -11,6 +11,7 @@ from urllib.parse import parse_qs, urlsplit
 from folio import demo
 from folio.documents import digest
 from folio.integrations import advice, outline
+from folio.notice_import import NoticeImports
 from folio.store import Conflict, Store
 from folio.weknora import Engine
 
@@ -57,6 +58,7 @@ def main():
             ROOT / ".state" / "folders" / digest(os.path.normcase(str(folder)))[:24]
         )
     store = Store(args.state)
+    imports = NoticeImports(args.state / "notices")
     lock = threading.Lock()
 
     def sync():
@@ -123,6 +125,18 @@ def main():
                 body = json.loads(self.rfile.read(size))
                 if not isinstance(body, dict):
                     raise ValueError("JSON 객체가 필요합니다.")
+                if url.path == "/api/notice/import":
+                    return self.send(200, imports.import_url(body["url"]))
+                if url.path == "/api/notice/confirm":
+                    return self.send(
+                        200,
+                        imports.confirm(
+                            body["id"],
+                            body["revision"],
+                            body["topic"],
+                            body["generation"],
+                        ),
+                    )
                 if url.path == "/api/sync":
                     sync()
                     notify_engine()
@@ -181,11 +195,21 @@ def main():
                 else:
                     return self.send(404, {})
                 return self.send(200, {"ok": True})
+            if url.path == "/api/notices":
+                return self.send(200, imports.list())
+            if url.path in ("/api/notice", "/api/notice/original"):
+                query = parse_qs(url.query)
+                key = query["id"][0]
+                if url.path.endswith("/original"):
+                    raw, kind = imports.original(key, query["sha"][0])
+                    return self.send(200, raw, kind)
+                return self.send(200, imports.view(key))
             if url.path == "/api/view":
                 return self.send(
                     200,
                     {
                         **store.view(),
+                        "notice_decisions": imports.team_decisions(),
                         **scan_status,
                         "demo": args.demo,
                         "folder": folder.name,
@@ -207,6 +231,7 @@ def main():
             assets = {
                 "/": ("index.html", "text/html"),
                 "/app.js": ("app.js", "text/javascript"),
+                "/notices.js": ("notices.js", "text/javascript"),
                 "/style.css": ("style.css", "text/css"),
             }
             if url.path in assets:

@@ -79,6 +79,15 @@ def read_catalog(folder, docs):
             raise ValueError(
                 f"{path}: 등록된 원문 해시와 다릅니다. 출처와 판본을 확인해 주세요."
             )
+        mapping = row.get("rule_terms", {})
+        if not isinstance(mapping, dict) or any(
+            not isinstance(k, str)
+            or not isinstance(v, list)
+            or not v
+            or any(t not in terms for t in v)
+            for k, v in mapping.items()
+        ):
+            raise ValueError(f"{path}: 기준별 연결 단어를 확인해 주세요.")
         catalog[path] = row
     return catalog
 
@@ -117,6 +126,7 @@ def bundles(catalog, files):
             "identity": identity,
             "terms": sorted(set(root.get("terms", []))),
             "members": members,
+            **({"rule_terms": root["rule_terms"]} if "rule_terms" in root else {}),
         }
     return result
 
@@ -161,7 +171,9 @@ def evidence(selected, root_sections, bundle, edition):
     anchor = units(selected)[idx]["quote"] if idx is not None else selected["quote"]
     terms = [
         t
-        for t in bundle["terms"]
+        for t in bundle.get("rule_terms", {}).get(
+            selected["topic"], [] if "rule_terms" in bundle else bundle["terms"]
+        )
         if has_term(selected["topic"].split(" / ")[-1] + " " + anchor, t)
     ]
     ref = rule_reference(selected, root_sections)

@@ -483,3 +483,11 @@ button:hover {
   }
 }
 .wiki-prose{font:16px/1.75 var(--sans);max-width:78ch;overflow-wrap:anywhere}.wiki-prose p{margin:.4em 0}.wiki-prose h4{font:600 20px/1.5 var(--serif);margin:1em 0 .35em}.wiki-prose a{color:var(--green)}
+.notice-form label {display:block; font-weight:600; margin-bottom:.6rem}
+.notice-form > div, .notice-actions {display:flex; gap:1rem; flex-wrap:wrap; align-items:center}
+.notice-form input {flex:1; min-width:12rem}
+.notice-actions {justify-content:space-between; margin-top:1rem}
+.notice-past {margin:1rem 0}
+.notice-past button {display:block; margin:.5rem 0}
+.panel .compare > div {min-width:0}
+.panel .compare .quote {overflow-wrap:anywhere}
