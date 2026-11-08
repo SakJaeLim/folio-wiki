@@ -20,7 +20,13 @@
 
 아래 방법으로 앱을 실행한 뒤 **공고 가져오기**에 [기업마당 공고 주소](https://www.bizinfo.go.kr/sii/siia/selectSIIA200Detail.do?pblancId=PBLN_000000000119859)를 붙여 넣으세요. Folio가 공식 파일 6개를 찾아 본문 2쪽과 FAQ 15쪽을 보여 줍니다. 쪽 번호를 누르면 그때 읽은 PDF를 열 수 있습니다. 두 문구를 대조한 뒤 **이 연결 확인**을 누르면 팀 위키에 기록됩니다. 같은 주소를 다시 가져오면 바뀐 근거를 확인할 수 있습니다.
 
-이 기능은 기업마당의 공고 상세 페이지를 지원합니다. PDF를 읽으려면 `pdftotext`가 PATH에 있어야 합니다. HWPX는 별도 설치 없이 읽습니다. HWP, 양식, 매뉴얼 등은 목록에서 처리 상태를 확인할 수 있습니다. 현재는 제목이나 표의 비목과 첨부의 제한 문장에 같은 표현이 있는 경우를 찾습니다. [실제 공고와 대조 시험](docs/research/notice-url.md)
+**별첨 2의 증빙서류**도 본문과 나란히 볼 수 있습니다. 예를 들어 창업경진대회 수상 가점에는 입상실적 증명원 또는 상장 사본이 필요합니다. 대표자 신분증, 가점, 서류평가 면제, 부동산임대업 예외를 각각 구분하고, 어느 요건에 쓰이는지 특정할 수 없는 행은 따로 표시합니다. [두 기관 대조 결과와 화면](docs/research/hwp-proof.md)
+
+기업마당 공고의 PDF는 PATH에 있는 `pdftotext`로, HWPX는 Python 표준 라이브러리로 읽습니다. **HWP 5**를 읽으려면 Node.js 22 이상에서 다음 명령을 한 번 실행한 뒤 Folio를 실행하세요. PDF 비교와 HWP 표 읽기에 쓰는 원본은 사용자의 PC에 보관합니다. [공고 URL 가져오기 시험](docs/research/notice-url.md)
+
+```sh
+npm install --global --omit=optional --ignore-scripts kordoc@4.24.45 pdfjs-dist@4.10.38
+```
 
 [![공고 본문과 FAQ에서 기계장치 구매 기준을 확인하는 화면](docs/media/notice-url-review.png)](docs/media/notice-url-review.png)
 

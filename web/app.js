@@ -203,7 +203,7 @@ function render() {
 async function load(force = false) {
   const next = await api("/api/view"),
     changed = JSON.stringify(next) !== JSON.stringify(data);
-  if (!data && next.demo) view = "review";
+  if (!data && next.demo && view === "wiki") view = "review";
   data = next;
   if (force || changed) render();
 }

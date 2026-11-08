@@ -287,7 +287,10 @@ class Store:
                 ):
                     continue
                 linked = any(
-                    topic in bundles.get(i["path"], {}).get("rule_terms", {})
+                    any(
+                        topic in bundles.get(i["path"], {}).get(field, {})
+                        for field in ("rule_terms", "proof_targets")
+                    )
                     for i in items
                 )
                 if (

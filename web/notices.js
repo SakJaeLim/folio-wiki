@@ -33,22 +33,33 @@ function originalLink(f, location) {
   if (!f?.raw_sha256) return "";
   const page = /^PDF (\d+)쪽$/.exec(location || "");
   const params = new URLSearchParams({id:noticeData.id, sha:f.raw_sha256});
-  return '<a target="_blank" rel="noopener" href="/api/notice/original?' + esc(params) +
+  const download = /\.hwpx?$/i.test(f.name) ? ' download="' + esc(f.name) + '"' : '';
+  return '<a target="_blank" rel="noopener"' + download + ' href="/api/notice/original?' + esc(params) +
     (page ? "#page=" + page[1] : "") + '">' + esc(location || "원본 열기") + '</a>';
+}
+function proofText(quote, attachment) {
+  const lines = quote.split("\n");
+  const detail = lines.find(s => s.startsWith("[붙임 ") && s.includes(" · HWP 표 "));
+  const lead = attachment ? (detail ? detail.replace(/^\[[^\]]+\]\s*-?\s*/, "") : lines[1]) :
+    quote.split(/\n(?:[-*※▖]|《)/)[0];
+  if (!lead || lead === quote) return '<p>' + esc(quote) + '</p>';
+  return '<p>' + esc(lead) + '</p><details><summary>' +
+    (attachment ? '표 행과 붙임 원문' : '본문 전체') + '</summary><p>' + esc(quote) + '</p></details>';
 }
 function noticeTopic(t, i, root) {
   const d = noticeData, terms = d.rule_terms[t.name] || [];
+  const proof = (d.proof_topics || []).includes(t.name);
   const status = {open:"확인 대기", adopted:"확인 완료", review_again:"재검토 필요"};
   const left = '<section class="quote"><small>공고 본문　' + originalLink(root,d.locations[t.name]) +
-    '</small><h3>' + esc(t.name) + '</h3><p>' + esc(t.quote || "현재 본문에서 찾을 수 없음") + '</p></section>';
+    '</small>' + (proof ? proofText(t.quote, false) : '<h3>' + esc(t.name) + '</h3><p>' + esc(t.quote || "현재 본문에서 찾을 수 없음") + '</p>') + '</section>';
   const right = t.matches.map(m => {
     const f = d.files.find(x => x.path === m.path);
-    return '<section class="quote"><small>' + esc(f?.role || "첨부") + '　' + originalLink(f,m.section) +
-      '</small><p>' + esc(m.quote) + '</p><small>' + esc(f?.name) + '</small></section>';
+    return '<section class="quote"><small>' + esc(proof ? "제출 서류" : f?.role || "첨부") + '　' + originalLink(f,m.section) +
+      '</small>' + (proof ? proofText(m.quote, true) : '<p>' + esc(m.quote) + '</p>') + '<small>' + esc(f?.name) + '</small></section>';
   }).join("");
   const diff = t.comparison?.exceptions;
   const previous = diff?.removed?.map(m => '<p>' + esc(m.quote) + '</p>').join("") || "";
-  return '<article class="panel"><div class="cardhead"><h2>' + esc(t.name) + '</h2><span class="badge">' +
+  return '<article class="panel' + (proof ? ' proof-card' : '') + '"><div class="cardhead"><h2>' + esc(t.name) + '</h2><span class="badge">' +
     esc(status[t.status] || t.status) + '</span></div><div class="compare">' + left + '<div>' +
     (right || '<p>현재 연결된 첨부 문구가 없습니다.</p>') + '</div></div>' +
     (previous ? '<details><summary>이전에 확인한 첨부 문구</summary>' + previous + '</details>' : "") +
@@ -66,9 +77,28 @@ function noticeDecisions(entries, tabName) {
       '</p><button class="link" data-notice-open="' + esc(d.notice) + '">' + esc(d.title) +
       '</button></div>').join("") + '</section>';
 }
+function noticeGroups(d, root) {
+  const proof = new Set(d.proof_topics || []);
+  const ordered = d.proof_topics || [];
+  const cards = (isProof) => (isProof ? ordered : d.topics.map(t => t.name).filter(n => !proof.has(n)))
+    .map(name => {
+      const index = d.topics.findIndex(t => t.name === name);
+      return index >= 0 ? noticeTopic(d.topics[index], index, root) : "";
+    }).join("");
+  let html = "";
+  if (proof.size) {
+    html += '<h3>신청 요건별 제출 서류</h3>';
+    html += (d.proof_notes || []).map(n => '<details><summary>첨부의 제출 시점과 유의사항</summary><p>' + esc(n.text) +
+      '　' + originalLink(d.files.find(f => f.path === n.path),n.location) + '</p></details>').join("");
+    html += cards(true);
+  }
+  const other = cards(false);
+  if (other) html += (proof.size ? '<h3>그 밖의 연결</h3>' : "") + other;
+  return html || '<p>본문에 대응하는 첨부 문구를 찾지 못했습니다. 공식 파일 목록을 확인해 주세요.</p>';
+}
 function renderNotices() {
   const d = noticeData;
-  let html = '<div class="intro"><h1>공고 가져오기</h1><p>기업마당 공고 주소를 넣으면 본문 기준과 첨부의 예외 문구를 함께 볼 수 있습니다.</p></div>' +
+  let html = '<div class="intro"><h1>공고 가져오기</h1><p>기업마당 공고 주소를 넣으면 신청 요건에 필요한 서류와 첨부의 예외 문구를 확인할 수 있습니다.</p></div>' +
     '<form class="panel notice-form"><label for="notice-url">공식 공고 URL</label><div><input id="notice-url" type="url" name="url" required maxlength="2048" placeholder="https://www.bizinfo.go.kr/…" value="' +
     esc(noticeInput) + '"><button' + (noticeBusy ? " disabled" : "") + '>' + (noticeBusy ? "처리 중…" : "가져오기") + '</button></div></form>';
   if (noticeError) html += '<p class="notice" role="alert">' + esc(noticeError) + '</p>';
@@ -81,8 +111,11 @@ function renderNotices() {
       d.files.map(f => '<div class="listitem"><strong>' + esc(f.name) + '</strong><br><small>' + esc(f.role + "　" + f.status) +
         '　' + originalLink(f) + '</small></div>').join("") + '</details></section>' +
       '<h2>연결 후보 ' + d.topics.length + '건</h2>' +
-      (d.topics.map((t,i) => noticeTopic(t,i,root)).join("") ||
-       '<p>지원하는 형식과 표현에서 연결 후보를 찾지 못했습니다. 공식 파일 목록을 확인해 주세요.</p>');
+      noticeGroups(d, root);
+    if (d.proof_unresolved?.length) html += '<details class="panel"><summary>본문 요건을 특정하지 못한 서류 ' +
+      d.proof_unresolved.length + '건</summary>' + d.proof_unresolved.map(row => '<p><strong>' + esc(row.category) +
+      '</strong>　' + originalLink(d.files.find(f => f.path === row.path), row.location) + '<br>' + esc(row.text) +
+      '<br><small>' + esc(row.reason) + '</small></p>').join("") + '</details>';
   }
   desk.innerHTML = html;
 }

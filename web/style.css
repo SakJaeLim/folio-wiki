@@ -491,3 +491,9 @@ button:hover {
 .notice-past button {display:block; margin:.5rem 0}
 .panel .compare > div {min-width:0}
 .panel .compare .quote {overflow-wrap:anywhere}
+.panel .compare .quote p {white-space:pre-line}
+.proof-card details {margin:.55rem 0}
+.proof-card .compare .quote p {font:1rem/1.65 var(--sans);margin:.7rem 0}
+@media (min-width:600px) {
+  .proof-card .compare {grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+}

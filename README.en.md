@@ -20,7 +20,13 @@ Can a Korean startup grant pay for an office desk? The notice lists purchases of
 
 Start the app below, open **공고 가져오기** (Import notice) and paste the [Bizinfo notice URL](https://www.bizinfo.go.kr/sii/siia/selectSIIA200Detail.do?pblancId=PBLN_000000000119859). Folio lists six official files and shows the equipment rule on PDF page 2 alongside the FAQ on page 15. Each page link opens the archived original. Click **이 연결 확인** after reviewing the passages. The team wiki records the confirmation. Import the URL again to check for changes.
 
-This adapter supports Bizinfo detail pages. PDF extraction requires `pdftotext` on PATH. HWPX uses Python's standard library. The inventory identifies unsupported or reference-only files. Candidate discovery uses explicit restrictions and shared terms in labelled rules. [Replay and limitations](docs/research/notice-url.md) · [App screenshot](docs/media/notice-url-review.png)
+Under **신청 요건별 제출 서류**, the left column shows the requirement from the notice. The right column shows the corresponding HWP checklist row and, when available, the certificate named in its referenced form. Unmatched rows stay visible. In a second notice from Pyeongtaek, the app kept eight required submissions separate from four requested only if held. [Two-notice replay](docs/research/hwp-proof.md)
+
+Bizinfo PDF extraction needs `pdftotext` on PATH. HWPX uses Python's standard library. For binary HWP 5 files, install the tested reader with Node.js 22 or later, then start Folio. [URL import replay](docs/research/notice-url.md)
+
+```sh
+npm install --global --omit=optional --ignore-scripts kordoc@4.24.45 pdfjs-dist@4.10.38
+```
 
 ## Try it
 
