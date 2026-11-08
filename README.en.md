@@ -42,6 +42,8 @@ When passages disagree under matching headings, choose the source and the senten
 
 ## What this repository implements
 
+Register an official notice and its companion files in `folio-sources.json` to track separate attachments and FAQs. Folio checks the publication URL, program, year, approved attachment URL and Markdown digest. A Korean startup notice replay links the equipment rule to FAQ page 15 while ignoring the same restriction in the prior year's FAQ and a different program. [Registration example and replay (Korean)](docs/research/notice-files.md)
+
 Decisions can also track an explicit exemption in another section of the same file. Select the program section and enter the audience as named in the notice to narrow the review. A Korean ministry notice expanded one export program's exemption while retaining the existing exemption for another recipient. [Official editions, six replay results and instructions (Korean)](docs/research/cross-section-review.md)
 
 | Component | Responsibility |

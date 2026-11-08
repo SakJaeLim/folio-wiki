@@ -141,6 +141,22 @@ def main():
                             body.get("audience", ""),
                         )
                     notify_engine()
+                elif url.path == "/api/companion-preview":
+                    with lock:
+                        store.sync(folder)
+                        return self.send(
+                            200,
+                            {
+                                "matches": store.preview(
+                                    body["topic"],
+                                    body["generation"],
+                                    body["selection"],
+                                    body.get("unit"),
+                                    body.get("scope", ""),
+                                    body.get("audience", ""),
+                                )
+                            },
+                        )
                 elif url.path == "/api/advice":
                     if not args.enable_jev:
                         return self.send(

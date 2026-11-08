@@ -49,25 +49,31 @@ function toast(txt) {
 }
 const sourceBtn = (item, label = "원문 보기") =>
   `<button type="button" class="link" data-path="${esc(item.path)}" data-version="${esc(item.version)}" data-line="${item.start || 1}">${esc(label)}</button>`;
+function companionRows(items) {
+  return items.map(item => `<div><small>${esc(item.section)} · ${sourceBtn(item, item.path)} · ${item.start}행</small><p>${esc(item.quote)}</p></div>`).join("");
+}
 function historyRow(d) {
   const selected = d.evidence.find((c) => c.id === d.selection);
-  return `<div class="decision"><strong>${esc(d.topic)} · ${selected ? "채택" : d.selection === "hold" ? "보류" : "철회"}</strong><p>${selected ? esc(d.excerpt?.quote ?? selected.quote) : d.selection === "hold" ? "판단을 보류했습니다." : "안내를 철회했습니다."}</p>${selected?.scope || selected?.audience ? `<small>적용 범위 · ${esc([selected.scope, selected.audience].filter(Boolean).join(" / "))}</small>` : ""}<p class="muted">${esc(d.actor)} · ${esc(d.note)}</p><small>${esc(new Date(d.created).toLocaleString("ko-KR"))}</small><details><summary>결정 당시 원문 ${d.evidence.length}개</summary>${d.evidence.map((x) => `<div>${sourceBtn(x, x.path)} <small>${x.start}–${x.end}행</small></div>`).join("")}</details></div>`;
+  return `<div class="decision"><strong>${esc(d.topic)} · ${selected ? "채택" : d.selection === "hold" ? "보류" : "철회"}</strong><p>${selected ? esc(d.excerpt?.quote ?? selected.quote) : d.selection === "hold" ? "판단을 보류했습니다." : "안내를 철회했습니다."}</p>${selected?.scope || selected?.audience ? `<small>적용 범위 · ${esc([selected.scope, selected.audience].filter(Boolean).join(" / "))}</small>` : ""}<p class="muted">${esc(d.actor)} · ${esc(d.note)}</p><small>${esc(new Date(d.created).toLocaleString("ko-KR"))}</small><details><summary>결정 당시 원문 ${d.evidence.length}개</summary>${d.evidence.map((x) => `<div>${sourceBtn(x, x.path)} <small>${x.start}–${x.end}행</small></div>`).join("")}</details>${selected?.companion_evidence?.length ? `<details><summary>채택 당시 첨부 근거 ${selected.companion_evidence.length}건</summary>${companionRows(selected.companion_evidence)}</details>` : ""}</div>`;
 }
-function changes({before, after, reason, exceptions, scope, audience}) {
+function changes({before, after, reason, exceptions, scope, audience, external}) {
   function side(item, title, message) {
     if (!item) return `<section class="quote"><h3>${title}</h3><p>${message}</p></section>`;
     const refs = Object.entries(item.links).map(([name, url]) =>
       `<div><b>${esc(name)}</b><br><code>${esc(url)}</code></div>`).join("");
     const lines = item.start === item.end ? item.start : item.start + "~" + item.end;
-    return `<section class="quote"><h3>${title}</h3><small>${item.section ? esc(item.section) + " · " : ""}${sourceBtn(item, item.path)} · ${lines}행</small><p>${marked(item.quote)}</p>${refs}</section>`;
+    const identity = item.year && item.program ? `${esc(item.year)}년 ${esc(item.program)} · ` : "";
+    const origin = item.publication ? `<small>${identity}${item.role === "faq" ? "FAQ" : "첨부파일"} · <a href="${esc(item.publication)}" target="_blank" rel="noopener noreferrer">공식 공고</a></small>` : "";
+    return `<section class="quote"><h3>${title}</h3>${origin}<small>${item.section ? esc(item.section) + " · " : ""}${sourceBtn(item, item.path)} · ${lines}행</small><p>${marked(item.quote)}</p>${refs}</section>`;
   }
   if (reason === "exception") {
     const previous = exceptions.removed.map(item => side(item, "채택 당시 예외 문구", "")).join("");
     const latest = exceptions.added.map(item => side(item, "현재 예외 문구", "")).join("");
     const target = [scope, audience].filter(Boolean).join(" / ");
-    return `<div class="revision"><p class="notice">채택한 문장은 그대로입니다. 예외 조항이 바뀌어 적용 범위를 다시 확인해야 합니다.${target ? `<br>검토 대상: ${esc(target)}` : ""}</p>
+    const message = external ? "채택한 문장과 연결된 첨부 근거가 달라졌습니다. 추가되거나 빠진 자료를 확인해 주세요." : "채택한 문장은 그대로입니다. 예외 조항이 바뀌어 적용 범위를 다시 확인해야 합니다.";
+    return `<div class="revision"><p class="notice">${message}${target ? `<br>검토 대상: ${esc(target)}` : ""}</p>
       <div class="compare"><div>${side(before, "채택한 기준", "")}${previous}</div>
-      <div>${latest || side(after, "현재 원문 · 이전 예외 삭제", "")}</div></div></div>`;
+      <div>${latest || side(after, external ? "현재 원문 · 이전 첨부 근거 미확인" : "현재 원문 · 이전 예외 삭제", "")}</div></div></div>`;
   }
   return `<div class="revision"><div class="compare">
     ${side(before, "채택 당시", "")}
@@ -87,8 +93,9 @@ function candidate(x, t, draft, adopted) {
     <label>적용 대상<input name="audience-${x.id}" value="${esc(audience)}" maxlength="160" placeholder="원문에 적힌 대상명 · 비우면 전체"></label></details>`;
   const scope = active ? "" : `<label class="scope">채택 범위<select name="unit-${x.id}" aria-label="${esc(x.path)} 채택 범위">
     <option value="choose">문장을 선택하세요</option>${x.units.map((u,i) => `<option value="${i}" ${(draft["unit-"+x.id] ?? (x.units.length === 1 ? "0" : "choose")) === String(i) ? "selected" : ""}>${u.start}행 · ${esc(u.quote)}</option>`).join("")}<option value="" ${draft["unit-"+x.id] === "" ? "selected" : ""}>이 절 전체</option></select></label>`;
+  const preview = !active && data.publications?.[x.path] ? `<button type="button" class="link" data-preview="${x.id}">첨부 근거 확인</button><div class="companion-preview" aria-live="polite"></div>` : "";
   return `<section class="quote"><small>${active && adopted?.path === x.path ? "채택한 원문" : "원문"} ${x.start}~${x.end}행</small><h3>${sourceBtn(x, x.path)}</h3><p>${marked(x.quote)}</p>
-    ${active ? "" : `<label class="pick"><input type="radio" name="selection" value="${x.id}" ${draft.selection === x.id ? "checked" : ""}> 이 원문 채택</label>${scope}${filter}`}</section>`;
+    ${active ? "" : `<label class="pick"><input type="radio" name="selection" value="${x.id}" ${draft.selection === x.id ? "checked" : ""}> 이 원문 채택</label>${scope}${filter}${preview}`}</section>`;
 }
 function review(t, idx) {
   const draft = saved.get(key(t)) || {},
@@ -150,6 +157,14 @@ function render() {
       "<p>같은 제목의 절에서 비교할 내용이 발견되지 않았습니다.</p>";
   if (view === "sources")
     html +=
+      Object.entries(data.publications || {}).map(([path, bundle]) => {
+        const [page, year, program] = bundle.identity;
+        const members = Object.entries(bundle.members);
+        return `<div class="listitem"><h3>${esc(year)}년 ${esc(program)}</h3>
+          <small>공고 본문 ${esc(path)} · <a href="${esc(page)}" target="_blank" rel="noopener noreferrer">공식 공고</a></small>
+          <details><summary>연결된 첨부와 FAQ ${members.length}개</summary>
+          ${members.map(([file, m]) => sourceBtn({path:file, version:m.version}, file)).join(" ")}</details></div>`;
+      }).join("") +
       Object.entries(data.files)
         .map(
           ([path, version]) =>
@@ -209,6 +224,8 @@ document.querySelector("#close").onclick = () => dialog.close();
 desk.oninput = (e) => {
   const f = e.target.closest("form");
   if (f) {
+    const preview = e.target.closest(".quote")?.querySelector(".companion-preview");
+    if (preview) preview.textContent = "";
     const t = data.topics[+f.closest("[data-index]").dataset.index];
     saved.set(key(t), {
       ...saved.get(key(t)),
@@ -251,6 +268,22 @@ desk.onsubmit = async (e) => {
   }
 };
 desk.onclick = async (e) => {
+  const button = e.target.closest("[data-preview]");
+  if (button) {
+    const id = button.dataset.preview, form = button.closest("form");
+    const value = name => form.elements.namedItem(name + "-" + id)?.value || "";
+    const params = () => [value("unit"),value("scope"),value("audience")];
+    const [unit,scope,audience] = params();
+    if (unit === "choose") { toast("채택할 문장 또는 이 절 전체를 선택해 주세요."); return; }
+    const topic = data.topics[+form.closest("[data-index]").dataset.index];
+    button.disabled = true;
+    try {
+      const result = await api("/api/companion-preview",{topic:topic.name,generation:topic.generation,selection:id,unit:unit ? Number(unit) : null,scope,audience});
+      if (JSON.stringify(params()) === JSON.stringify([unit,scope,audience]))
+        button.nextElementSibling.innerHTML = companionRows(result.matches) || "이 범위와 연결된 첨부 근거가 없습니다.";
+    } catch (err) { toast(err.message); } finally { button.disabled = false; }
+    return;
+  }
   if(e.target.closest("[data-review-jump]")){view="review";render();return;}
   const src = e.target.closest("[data-path]");
   if (src) {
