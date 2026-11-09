@@ -49,6 +49,8 @@ def check(view, page, proof_hash):
     numbered = {}
     for t in topics:
         for m in t["matches"]:
+            if not m["section"].startswith("HWP 표 "):
+                continue
             f = next(f for f in view["files"] if f.get("path") == m["path"])
             assert f["raw_sha256"] == proof_hash and m["publication"] == page
             i = int(m["section"].split()[-1].removesuffix("행"))

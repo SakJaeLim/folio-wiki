@@ -30,6 +30,8 @@ npm install --global --omit=optional --ignore-scripts kordoc@4.24.45 pdfjs-dist@
 
 [![공고 본문과 FAQ에서 기계장치 구매 기준을 확인하는 화면](docs/media/notice-url-review.png)](docs/media/notice-url-review.png)
 
+예비창업패키지는 **신청할 때** 낼 자료와 **서류평가 통과 후** 주관기관 안내에 따라 낼 자료를 나눠 보여줍니다. 별첨 2가 시점을 명시하지 않은 서류는 따로 표시합니다. 확인 기록 7건 중 임대업 서류의 제출 시점 또는 대체 허용 문구만 바꿨을 때는 임대업 요건 1건만 재검토로 돌아왔습니다. [원문과 변경 시험 결과](docs/research/submission-stages.md)
+
 ## 직접 써보기
 
 Git과 Python 3.10 이상이 있는 PC에서 아래 세 줄을 실행하세요. 데모에는 Python 표준 라이브러리만 씁니다.

@@ -3,13 +3,14 @@
 import hashlib
 import json
 import os
+import re
 import tempfile
 import threading
 from functools import lru_cache
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
-from . import bizinfo
+from . import bizinfo, submission
 from .documents import digest
 from . import hwp_notice
 from .proof_rules import proof_links, proof_markdown
@@ -109,6 +110,7 @@ class NoticeImports:
         inventory, supplements, catalog = [], {}, []
         main, rules, total = None, {}, 0
         main_parts, proof_sources, proof_notes = [], {}, []
+        named_documents = {}
         for f in files:
             role, reason = bizinfo.classify(title, f)
             row = {"name": f.name, "url": f.stable, "role": role, "status": reason}
@@ -174,7 +176,17 @@ class NoticeImports:
                     )
                 )
                 if checklist:
-                    md = proof_markdown(proof_rows)
+                    named = submission.assign(proof_rows, parts)
+                    extra_rows = [
+                        {
+                            "category": "제출 안내",
+                            "text": name,
+                            "location": f"HWP 제출 안내 · {name}",
+                            "timing": claims,
+                        }
+                        for name, claims in named.items()
+                    ]
+                    md = proof_markdown(proof_rows + extra_rows)
                 else:
                     md = attachment_md(parts)
                 if len(md.encode()) > 512_000:
@@ -183,11 +195,19 @@ class NoticeImports:
                     continue
                 if checklist:
                     proof_sources[path] = proof_rows
+                    named_documents[path] = extra_rows
+                    record["submission"] = {
+                        r["location"]: submission.conditions(r)
+                        for r in proof_rows + extra_rows
+                        if r.get("timing")
+                        or r.get("form_alternatives")
+                        or submission.ALTERNATE.search(r["text"])
+                    }
                     proof_notes.extend(
                         {"path": path, "location": location, "text": value}
                         for location, value in parts
                         if location.startswith("HWP 문단")
-                        and ("신청 시 제출" in value or "발급일" in value)
+                        and (submission.PHASE.search(value) or "발급일" in value)
                     )
                 else:
                     supplements[path] = parts
@@ -197,6 +217,20 @@ class NoticeImports:
             raise ValueError("공고명과 연도가 일치하는 본문을 찾을 수 없습니다.")
         rule_terms = candidate_terms(rules, supplements.values())
         proof, targets, unresolved = proof_links(main_parts, proof_sources)
+        passage = submission.followup_passage(main_parts)
+        for path, docs in named_documents.items():
+            for doc in docs:
+                if (
+                    passage
+                    and "예비창업자" in passage[1]
+                    and re.fullmatch(r"창업(?:사실|여부)\s*확인서(?:류)?", doc["text"])
+                ):
+                    topic = "서류평가 통과자의 창업 여부 확인"
+                    proof[topic] = passage
+                    targets.setdefault(topic, {}).setdefault(path, []).append(
+                        doc["location"]
+                    )
+        submission_rows = submission.schedule(proof_sources, named_documents, targets)
         rules.update(proof)
         if targets:
             main["proof_targets"] = targets
@@ -225,6 +259,8 @@ class NoticeImports:
             "proof_topics": list(proof),
             "proof_unresolved": unresolved,
             "proof_notes": proof_notes,
+            "submissions": submission_rows,
+            "application_forms": submission.application_forms(main_parts),
         }
 
     def view(self, key):

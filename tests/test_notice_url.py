@@ -1,5 +1,6 @@
 """Exercise the ordinary import/confirm paths offline with valid HWPX files."""
 
+import json
 import tempfile
 import unittest
 import zipfile
@@ -183,6 +184,64 @@ class NoticeTest(unittest.TestCase):
                 changed["comparison"]["exceptions"]["removed"][0]["quote"],
             )
             self.assertIn("대표자 날인", changed["matches"][0]["quote"])
+
+    def test_timing_changes_with_identical_checklist_rows(self):
+        self.rows = [(3, "증빙서류 제출목록.hwp")]
+        self.files[1] = hwpx(["번호 필수 제출서류 비고", "1 등록확인서", "2 수료증"])
+        self.files[3] = b"one"
+        notes = {
+            b"one": "‘등록확인서’와 ‘수료증’은 신청 시 제출",
+            b"two": "‘등록확인서’는 신청 시 제출하고, 서류평가 통과 후 3일 이내 ‘수료증’ 제출",
+            b"three": "‘등록확인서’는 신청 시 제출하고, 서류평가 통과 후 5일 이내 ‘수료증’ 제출",
+        }
+
+        def blocks(raw):
+            cells = [
+                [{"text": a}, {"text": b}]
+                for a, b in [("구분", "제출서류"), ("1", "등록확인서"), ("2", "수료증")]
+            ]
+            return [
+                {"type": "paragraph", "text": notes[raw]},
+                {"type": "table", "table": {"sourceId": "t1", "cells": cells}},
+            ]
+
+        # Start with the pre-stage catalog and receipt. The original HWP bytes
+        # are archived, but the old decisions know only the checklist edition.
+        prepare = self.service.prepare
+
+        def legacy_prepare(page, title, files, home, folder):
+            result = prepare(page, title, files, home, folder)
+            result.pop("submissions")
+            catalog = folder / "folio-sources.json"
+            data = json.loads(catalog.read_text(encoding="utf8"))
+            for record in data["sources"]:
+                record.pop("submission", None)
+            catalog.write_text(json.dumps(data), encoding="utf8")
+            return result
+
+        with patch("folio.hwp_notice.convert", side_effect=blocks):
+            with patch.object(self.service, "prepare", side_effect=legacy_prepare):
+                original = self.run_import()
+            self.assertEqual(len(original["topics"]), 2)
+            for t in original["topics"]:
+                self.service.confirm(
+                    original["id"], original["revision"], t["name"], t["generation"]
+                )
+            unchanged = self.run_import()
+            self.assertTrue(all(t["status"] == "adopted" for t in unchanged["topics"]))
+            for raw in (b"two", b"three"):
+                self.files[3] = raw
+                changed = self.run_import()
+                (opened,) = [
+                    t for t in changed["topics"] if t["status"] == "review_again"
+                ]
+                self.assertIn("수료증", opened["name"])
+                self.service.confirm(
+                    changed["id"],
+                    changed["revision"],
+                    opened["name"],
+                    opened["generation"],
+                )
 
     def test_bad_refresh_preserves_decision(self):
         d = self.run_import()

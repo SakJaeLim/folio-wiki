@@ -46,6 +46,16 @@ function proofText(quote, attachment) {
   return '<p>' + esc(lead) + '</p><details><summary>' +
     (attachment ? '표 행과 붙임 원문' : '본문 전체') + '</summary><p>' + esc(quote) + '</p></details>';
 }
+const stageLabels = {application:"신청할 때", after:"서류평가 통과 후", uncertain:"시점 확인 필요"};
+function conditionText(item) {
+  const c = item.submission;
+  if (!c) return "";
+  let html = '<p><strong>제출 시점　' + esc(stageLabels[c.stage] || stageLabels.uncertain) + '</strong></p>';
+  const windows = [...new Set(c.timing.flatMap(t => t.window || []))];
+  if (windows.length) html += '<p>' + esc(windows.join(", ")) + '</p>';
+  for (const a of c.alternatives || []) html += '<p><small>' + esc(a.location) + '</small><br>' + esc(a.quote) + '</p>';
+  return html;
+}
 function noticeTopic(t, i, root) {
   const d = noticeData, terms = d.rule_terms[t.name] || [];
   const proof = (d.proof_topics || []).includes(t.name);
@@ -55,14 +65,14 @@ function noticeTopic(t, i, root) {
   const right = t.matches.map(m => {
     const f = d.files.find(x => x.path === m.path);
     return '<section class="quote"><small>' + esc(proof ? "제출 서류" : f?.role || "첨부") + '　' + originalLink(f,m.section) +
-      '</small>' + (proof ? proofText(m.quote, true) : '<p>' + esc(m.quote) + '</p>') + '<small>' + esc(f?.name) + '</small></section>';
+      '</small>' + (proof ? proofText(m.quote, true) + conditionText(m) : '<p>' + esc(m.quote) + '</p>') + '<small>' + esc(f?.name) + '</small></section>';
   }).join("");
   const diff = t.comparison?.exceptions;
-  const previous = diff?.removed?.map(m => '<p>' + esc(m.quote) + '</p>').join("") || "";
-  return '<article class="panel' + (proof ? ' proof-card' : '') + '"><div class="cardhead"><h2>' + esc(t.name) + '</h2><span class="badge">' +
+  const previous = diff?.removed?.map(m => '<p>' + esc(m.quote) + '</p>' + conditionText(m)).join("") || "";
+  return '<article id="notice-rule-' + i + '" class="panel' + (proof ? ' proof-card' : '') + '"><div class="cardhead"><h2>' + esc(t.name) + '</h2><span class="badge">' +
     esc(status[t.status] || t.status) + '</span></div><div class="compare">' + left + '<div>' +
     (right || '<p>현재 연결된 첨부 문구가 없습니다.</p>') + '</div></div>' +
-    (previous ? '<details><summary>이전에 확인한 첨부 문구</summary>' + previous + '</details>' : "") +
+    (previous ? '<details open><summary>이전에 확인한 첨부 근거</summary>' + previous + '</details>' : "") +
     '<div class="notice-actions"><small>' + (terms.length ? '양쪽에 있는 표현　' + esc(terms.join(", ")) : "") +
     '</small>' + (t.status === "adopted" ? '<small>확인 기록　' + esc(t.last_confirmed) + '</small>' :
       (t.matches.length || t.status === "review_again" ? '<button data-notice-confirm="' + i + '"' + (noticeBusy ? " disabled" : "") + '>' + (t.matches.length ? "이 연결 확인" : "연결 해제 확인") + '</button>' : "")) +
@@ -77,6 +87,33 @@ function noticeDecisions(entries, tabName) {
       '</p><button class="link" data-notice-open="' + esc(d.notice) + '">' + esc(d.title) +
       '</button></div>').join("") + '</section>';
 }
+function submissionGuide(d, root) {
+  const rows = d.submissions || [];
+  if (!rows.some(r => r.timing.length)) return "";
+  return Object.entries(stageLabels).map(([stage, label]) => {
+    const items = rows.filter(r => r.stage === stage);
+    const forms = stage === "application" ? (d.application_forms || []) : [];
+    if (!items.length && !forms.length) return "";
+    const formRows = forms.map(r => '<li><strong>' + esc(r.document) + '</strong>　' +
+      esc(r.method) + '　' + originalLink(root,r.location) + '</li>').join("");
+    const documents = items.map(r => {
+      const idx = d.topics.findIndex(t => t.name === r.topic);
+      const file = d.files.find(f => f.path === r.path);
+      const ref = idx >= 0 ? '<a href="#notice-rule-' + idx + '">요건 원문 보기</a>' : '개별 요건 미연결';
+      const citations = r.timing.map(c => '<p>' + esc(c.quote) + '　' + originalLink(file,c.location) + '</p>').join("");
+      const alt = r.alternatives.map(a => '<p>' + esc(a.quote) + '　' + originalLink(file,a.location) + '</p>').join("");
+      return '<li><strong>' + esc(r.document) + '</strong><small>' + esc(r.category) + '　' + ref + '</small>' +
+        (citations || alt ? '<details><summary>시점과 대체 서류 근거</summary>' + citations + alt + '</details>' : '') + '</li>';
+    }).join("");
+    const rootTopics = stage === "after" ? new Set(items.filter(r => r.location.startsWith("HWP 제출 안내") && r.topic).map(r => r.topic)) : [];
+    const passages = [...rootTopics].map(name => {
+      const topic = d.topics.find(t => t.name === name);
+      return topic ? '<details><summary>통과 후 제출 안내와 본문에 나온 서류 예시</summary><p>' +
+        esc(topic.quote) + '　' + originalLink(root, d.locations[name]) + '</p></details>' : "";
+    }).join("");
+    return '<section class="panel submission-guide"><h2>' + label + '</h2><ul>' + formRows + documents + '</ul>' + passages + '</section>';
+  }).join("");
+}
 function noticeGroups(d, root) {
   const proof = new Set(d.proof_topics || []);
   const ordered = d.proof_topics || [];
@@ -85,7 +122,7 @@ function noticeGroups(d, root) {
       const index = d.topics.findIndex(t => t.name === name);
       return index >= 0 ? noticeTopic(d.topics[index], index, root) : "";
     }).join("");
-  let html = "";
+  let html = submissionGuide(d, root);
   if (proof.size) {
     html += '<h3>신청 요건별 제출 서류</h3>';
     html += (d.proof_notes || []).map(n => '<details><summary>첨부의 제출 시점과 유의사항</summary><p>' + esc(n.text) +

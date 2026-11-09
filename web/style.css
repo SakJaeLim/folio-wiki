@@ -493,6 +493,10 @@ button:hover {
 .panel .compare .quote {overflow-wrap:anywhere}
 .panel .compare .quote p {white-space:pre-line}
 .proof-card details {margin:.55rem 0}
+.submission-guide ul {margin:0; padding-left:1.2rem}
+.submission-guide li {padding:.45rem 0}
+.submission-guide li small {display:block}
+.submission-guide details {font-size:.9rem; margin:.25rem 0}
 .proof-card .compare .quote p {font:1rem/1.65 var(--sans);margin:.7rem 0}
 @media (min-width:600px) {
   .proof-card .compare {grid-template-columns:minmax(0,1fr) minmax(0,1fr)}

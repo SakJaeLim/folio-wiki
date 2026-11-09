@@ -8,6 +8,7 @@ from urllib.parse import urlsplit
 from .anchors import excerpt, locate, normalized, units
 from .cross_sections import SUBJECT, cites_rule, compact, paragraphs, rule_reference
 from .documents import _link
+from .submission import valid_conditions
 
 CATALOG = "folio-sources.json"
 
@@ -101,6 +102,11 @@ def read_catalog(folder, docs):
             for group in targets.values()
         ):
             raise ValueError(f"{path}: 증빙 표의 원문 위치를 확인해 주세요.")
+        timing = row.get("submission", {})
+        if not isinstance(timing, dict) or not all(
+            valid_conditions(c) for c in timing.values()
+        ):
+            raise ValueError(f"{path}: 제출 시점과 대체 서류 근거를 확인해 주세요.")
         catalog[path] = row
     return catalog
 
@@ -134,6 +140,11 @@ def bundles(catalog, files):
                 "version": files[child_path],
                 "role": record["role"],
                 "scope": record.get("scope", ""),
+                **(
+                    {"submission": record["submission"]}
+                    if "submission" in record
+                    else {}
+                ),
             }
         result[path] = {
             "identity": identity,
@@ -206,7 +217,7 @@ def evidence(selected, root_sections, bundle, edition):
                 continue
             proof = bundle.get("proof_targets", {}).get(selected["topic"], {})
             if (
-                topic.startswith("HWP 표 ")
+                topic.startswith(("HWP 표 ", "HWP 제출 안내 · "))
                 and topic in proof.get(path, ())
                 and not audience
             ):
@@ -221,8 +232,42 @@ def evidence(selected, root_sections, bundle, edition):
                 )
                 # A row moving within the same file does not change the document requirement.
                 key_text = re.sub(r" · HWP 표 t\d+(?=\])", "", item["quote"])
-                found[row["url"], selected["topic"], normalized(key_text), ()] = item
-            if proof or topic.startswith("HWP 표 ") and re.search(r" \d+행$", topic):
+                condition = row.get("submission", {}).get(topic, {})
+                if condition:
+                    item["submission"] = condition
+                # Compare just the stage and substitutes assigned to this row.
+                # A paragraph quoting several groups is retained for inspection only.
+                times = tuple(
+                    sorted(
+                        {
+                            (
+                                c["stage"],
+                                tuple(normalized(w) for w in c.get("window", ())),
+                            )
+                            for c in condition.get("timing", [])
+                        }
+                    )
+                )
+                options = tuple(
+                    sorted(
+                        {
+                            normalized(c["quote"])
+                            for c in condition.get("alternatives", [])
+                        }
+                    )
+                )
+                found[
+                    row["url"],
+                    selected["topic"],
+                    normalized(key_text),
+                    (times, options),
+                ] = item
+            if (
+                proof
+                or topic.startswith("HWP 제출 안내 · ")
+                or topic.startswith("HWP 표 ")
+                and re.search(r" \d+행$", topic)
+            ):
                 continue
             for p in paragraphs(section):
                 text = p["quote"].lstrip(" \t☞※•*-")
