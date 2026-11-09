@@ -28,6 +28,8 @@ Bizinfo PDF extraction needs `pdftotext` on PATH. HWPX uses Python's standard li
 npm install --global --omit=optional --ignore-scripts kordoc@4.24.45 pdfjs-dist@4.10.38
 ```
 
+The startup notice groups documents by when they are due. The view distinguishes filing, post-screening submission and documents whose timing the attachment leaves open. In independent edits to copies of the real HWP, changing the rental-business filing stage or the substitute allowed in form 6 reopened only the rental requirement. [Source and replay](docs/research/submission-stages.md)
+
 ## Try it
 
 Install Git and Python 3.10 or later. The workshop demo uses the Python standard library.

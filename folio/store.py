@@ -4,7 +4,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import companions
+from . import companions, submission_history
 from .anchors import comparison, definitions, links, units
 from .cross_sections import with_cross_changes
 from .documents import digest, public_files, sections
@@ -86,6 +86,7 @@ def changed_evidence(db, chosen, items, editions, current_version, bundle):
 
 def bind_previous_decision(db, decision_id, chosen, current_version, bundle):
     if "publication_bundle" in chosen:
+        submission_history.enrich(db, chosen["publication_bundle"])
         return
     saved = db.execute(
         "SELECT baseline FROM decision_origins WHERE decision=?", (decision_id,)
@@ -224,6 +225,7 @@ class Store:
                 db.execute(
                     "CREATE TABLE IF NOT EXISTS notice_import(id INTEGER PRIMARY KEY CHECK(id=1), receipt TEXT NOT NULL)"
                 )
+                submission_history.recover(db, self.path.parent)
                 db.execute(
                     "INSERT OR REPLACE INTO notice_import VALUES(1,?)",
                     (pack(notice_receipt),),

@@ -135,10 +135,21 @@ def read_blocks(blocks):
         if len(forms) != 1:
             continue
         label, cells = forms[0]
+        if (
+            cells
+            and cells[0]
+            and re.match(r"^\((?:필수|해당\s*시)\)", cells[0][0]["text"])
+        ):
+            row["form_title"] = flat(cells[0][0]["text"])
         # The exact document name (e.g. a diploma certificate) may appear only
         # in the form referenced from the overview. Keep its explicit locator.
         snippets = []
         for value in leaf_cells(cells):
+            for line in value.splitlines():
+                if re.search(r"대체|갈음|대신", line):
+                    row.setdefault("form_alternatives", []).append(
+                        {"location": f"붙임 {match[1]} · {label}", "quote": flat(line)}
+                    )
             extra = re.search(r"※\s*제출서류\s*\n((?:\s*-\s*[^\n]+\n?)+)", value)
             if extra:
                 snippets.append(extra[1].strip())
